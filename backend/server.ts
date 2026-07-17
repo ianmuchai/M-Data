@@ -64,9 +64,11 @@ app.use((_request, response) => {
   response.status(404).json({ error: 'Not found' });
 });
 
-app.listen(port, () => {
-  console.log(`Analytics API available at http://localhost:${port}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`Analytics API available at http://localhost:${port}`);
+  });
+}
 
-
-
+export { app };
+export default app;

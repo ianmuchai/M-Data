@@ -13,7 +13,8 @@ type LearningStore = {
   lastUpdated?: string;
 };
 
-const storePath = path.resolve(process.cwd(), 'data', 'learning-store.json');
+const packagedStorePath = path.resolve(process.cwd(), 'data', 'learning-store.json');
+const storePath = process.env.VERCEL ? path.join('/tmp', 'm-data-learning-store.json') : packagedStorePath;
 
 function emptyStore(): LearningStore {
   return { datasetsSeen: 0, fields: {}, markets: {} };
@@ -25,8 +26,9 @@ function normalizeKey(value: string) {
 
 function readStore(): LearningStore {
   try {
-    if (!fs.existsSync(storePath)) return emptyStore();
-    const parsed = JSON.parse(fs.readFileSync(storePath, 'utf8')) as Partial<LearningStore>;
+    const readablePath = fs.existsSync(storePath) ? storePath : packagedStorePath;
+    if (!fs.existsSync(readablePath)) return emptyStore();
+    const parsed = JSON.parse(fs.readFileSync(readablePath, 'utf8')) as Partial<LearningStore>;
     return {
       datasetsSeen: Number(parsed.datasetsSeen ?? 0),
       fields: parsed.fields ?? {},
@@ -104,4 +106,3 @@ export function summarizeLearning(store = readStore()) {
     topColumnRoles: topRoles,
   };
 }
-
