@@ -1,0 +1,161 @@
+{
+  "datasetsSeen": 7,
+  "fields": {
+    "sku": {
+      "identifier": 4
+    },
+    "category": {
+      "identifier": 4,
+      "segment_dimension": 4
+    },
+    "department": {
+      "identifier": 4
+    },
+    "stock_on_hand": {
+      "inventory_position": 15
+    },
+    "units_sold": {
+      "volume_measure": 10
+    },
+    "revenue": {
+      "value_measure": 15
+    },
+    "cost": {
+      "cost_or_loss_measure": 4
+    },
+    "margin": {
+      "value_measure": 5
+    },
+    "risk_score": {
+      "risk_indicator": 14
+    },
+    "region": {
+      "identifier": 13,
+      "segment_dimension": 12
+    },
+    "supplier": {
+      "identifier": 4
+    },
+    "delivery_days": {
+      "numeric_measure": 8
+    },
+    "account_id": {
+      "identifier": 19
+    },
+    "branch": {
+      "segment_dimension": 9
+    },
+    "loan_balance": {
+      "numeric_measure": 4,
+      "exposure_measure": 5
+    },
+    "exposure_amount": {
+      "numeric_measure": 4,
+      "exposure_measure": 5
+    },
+    "default_risk": {
+      "risk_indicator": 9
+    },
+    "premium": {
+      "value_measure": 10
+    },
+    "claim_amount": {
+      "cost_or_loss_measure": 9
+    },
+    "policy_type": {
+      "identifier": 9
+    },
+    "transaction_date": {
+      "time_period": 20
+    },
+    "patient_id": {
+      "identifier": 4
+    },
+    "clinic": {
+      "identifier": 4
+    },
+    "appointment_date": {
+      "time_period": 5
+    },
+    "student_id": {
+      "identifier": 4
+    },
+    "course": {
+      "identifier": 4
+    },
+    "grade": {
+      "numeric_measure": 4
+    },
+    "property_id": {
+      "identifier": 4
+    },
+    "tenant": {
+      "identifier": 4
+    },
+    "rent": {
+      "numeric_measure": 4
+    },
+    "production_line": {
+      "identifier": 4
+    },
+    "defect_count": {
+      "numeric_measure": 4
+    },
+    "warehouse": {
+      "identifier": 4
+    },
+    "meter_usage": {
+      "numeric_measure": 4
+    },
+    "billing_amount": {
+      "numeric_measure": 4
+    },
+    "service_line": {
+      "identifier": 4,
+      "segment_dimension": 4
+    },
+    "customer_tier": {
+      "identifier": 9
+    },
+    "product_id": {
+      "time_period": 5
+    },
+    "product_name": {
+      "identifier": 4
+    },
+    "supplier_name": {
+      "identifier": 4
+    },
+    "unit_cost": {
+      "volume_measure": 5
+    },
+    "retail_price": {
+      "numeric_measure": 4
+    },
+    "opening_stock": {
+      "inventory_position": 5
+    },
+    "closing_stock": {
+      "inventory_position": 5
+    },
+    "reorder_point": {
+      "numeric_measure": 4
+    },
+    "stock_status": {
+      "inventory_position": 5
+    }
+  },
+  "lastUpdated": "2026-07-14T11:24:07.960Z",
+  "markets": {
+    "retail-commerce": 10,
+    "finance-planning": 2,
+    "operations-supply-chain": 6,
+    "banking-credit": 8,
+    "insurance-risk": 6,
+    "education-training": 2,
+    "real-estate-property": 3,
+    "healthcare-clinics": 2,
+    "manufacturing-production": 1,
+    "energy-utilities": 1
+  }
+}
