@@ -3,19 +3,17 @@ import express from 'express';
 import { categories, ranges } from './analyticsData';
 import { buildAnalyticsResponse, normalizeCategory, normalizeRange } from './analyticsService';
 import { analyzeUpload } from './uploadAnalysisService';
+import { isAllowedCorsOrigin, parseAllowedOrigins } from './corsPolicy';
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
-const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173,http://127.0.0.1:5173')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedOrigins = parseAllowedOrigins(process.env.CORS_ORIGIN);
 
 app.disable('x-powered-by');
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (isAllowedCorsOrigin(origin, allowedOrigins)) {
         callback(null, true);
         return;
       }
@@ -72,3 +70,4 @@ if (!process.env.VERCEL) {
 
 export { app };
 export default app;
+
