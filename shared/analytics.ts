@@ -238,6 +238,42 @@ export type ReportBuilderPreview = {
   rows: AdvancedAnalysisRow[];
   recommendations: string[];
 };
+export type VisualStorySource = 'dashboard' | 'upload';
+
+export type VisualStoryType = 'bar' | 'line' | 'area' | 'scorecards' | 'table' | 'comparison' | 'ranking' | 'insights';
+
+export type PresentationPreset = 'executive' | 'analyst' | 'operations' | 'board';
+
+export type VisualStoryConfig = {
+  source: VisualStorySource;
+  visualType: VisualStoryType;
+  metric: string;
+  dimension: string;
+  preset: PresentationPreset;
+  theme: 'vibrant' | 'calm' | 'boardroom';
+  narrativeStyle: 'concise' | 'guided' | 'detailed';
+};
+
+export type PresentationSlide = {
+  id: string;
+  title: string;
+  subtitle: string;
+  section: string;
+  narrative: string;
+  metrics: Metric[];
+  bullets: string[];
+  visualPoints: AdvancedAnalysisSeriesPoint[];
+  recommendations: string[];
+};
+
+export type PresentationDeck = {
+  title: string;
+  subtitle: string;
+  preset: PresentationPreset;
+  source: VisualStorySource;
+  generatedAt: string;
+  slides: PresentationSlide[];
+};
 export type UploadAnalysisResponse = {
   fileName: string;
   generatedAt: string;
@@ -255,6 +291,7 @@ export type UploadAnalysisResponse = {
   filterViews: UploadFilterView[];
   recommendations: string[];
 };
+
 
 
 
