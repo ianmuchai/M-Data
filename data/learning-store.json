@@ -1,12 +1,12 @@
 {
-  "datasetsSeen": 7,
+  "datasetsSeen": 9,
   "fields": {
     "sku": {
       "identifier": 4
     },
     "category": {
       "identifier": 4,
-      "segment_dimension": 4
+      "segment_dimension": 8
     },
     "department": {
       "identifier": 4
@@ -15,7 +15,7 @@
       "inventory_position": 15
     },
     "units_sold": {
-      "volume_measure": 10
+      "volume_measure": 15
     },
     "revenue": {
       "value_measure": 15
@@ -118,44 +118,79 @@
       "identifier": 9
     },
     "product_id": {
-      "time_period": 5
+      "time_period": 10
     },
     "product_name": {
-      "identifier": 4
+      "identifier": 9
     },
     "supplier_name": {
-      "identifier": 4
+      "identifier": 9
     },
     "unit_cost": {
-      "volume_measure": 5
+      "volume_measure": 10
     },
     "retail_price": {
-      "numeric_measure": 4
+      "numeric_measure": 8
     },
     "opening_stock": {
-      "inventory_position": 5
+      "inventory_position": 10
     },
     "closing_stock": {
-      "inventory_position": 5
+      "inventory_position": 10
     },
     "reorder_point": {
-      "numeric_measure": 4
+      "numeric_measure": 8
     },
     "stock_status": {
-      "inventory_position": 5
+      "inventory_position": 10
+    },
+    "listing_id": {
+      "time_period": 5
+    },
+    "property_type": {
+      "segment_dimension": 4
+    },
+    "city": {
+      "segment_dimension": 4
+    },
+    "state": {
+      "segment_dimension": 4
+    },
+    "bedrooms": {
+      "numeric_measure": 4
+    },
+    "bathrooms": {
+      "numeric_measure": 4
+    },
+    "square_footage": {
+      "numeric_measure": 4
+    },
+    "year_built": {
+      "numeric_measure": 4
+    },
+    "list_price": {
+      "numeric_measure": 4
+    },
+    "sale_price": {
+      "numeric_measure": 4
+    },
+    "listing_status": {
+      "segment_dimension": 4
     }
   },
-  "lastUpdated": "2026-07-14T11:24:07.960Z",
+  "lastUpdated": "2026-07-19T18:57:15.668Z",
   "markets": {
-    "retail-commerce": 10,
+    "retail-commerce": 15,
     "finance-planning": 2,
-    "operations-supply-chain": 6,
+    "operations-supply-chain": 9,
     "banking-credit": 8,
     "insurance-risk": 6,
     "education-training": 2,
-    "real-estate-property": 3,
+    "real-estate-property": 4,
     "healthcare-clinics": 2,
     "manufacturing-production": 1,
-    "energy-utilities": 1
+    "energy-utilities": 1,
+    "hr-workforce": 4,
+    "hospitality-travel": 1
   }
 }
