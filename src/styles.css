@@ -1812,3 +1812,364 @@ h3,
     flex: 0 0 34px;
   }
 }
+
+/* Guided UI rebuild: calmer, friendlier workspace layer */
+:root {
+  --page: #f5f7fb;
+  --surface: rgba(255, 255, 255, 0.94);
+  --surface-strong: #ffffff;
+  --surface-alt: #f8fbff;
+  --border: rgba(15, 23, 42, 0.1);
+  --border-soft: rgba(15, 23, 42, 0.07);
+  --text-muted: #64748b;
+  --accent: #0f9f9a;
+  --accent-strong: #0f766e;
+  --accent-blue: #2563eb;
+  --gold: #d97706;
+  --coral: #ea580c;
+  --rose: #dc2626;
+  --positive: #047857;
+  --warning: #a16207;
+  --critical: #b91c1c;
+  --ink: #0f172a;
+  --shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+  --shadow-strong: 0 18px 48px rgba(15, 118, 110, 0.12);
+}
+
+body {
+  background:
+    linear-gradient(180deg, #f8fbff 0%, var(--page) 48%, #f7faf9 100%);
+}
+
+body::before {
+  opacity: 0.35;
+  background:
+    repeating-linear-gradient(90deg, rgba(15, 23, 42, 0.025) 0 1px, transparent 1px 96px),
+    repeating-linear-gradient(0deg, rgba(15, 23, 42, 0.018) 0 1px, transparent 1px 96px);
+}
+
+.app-shell {
+  max-width: 1440px;
+}
+
+.topbar,
+.panel,
+.command-overview,
+.analysis-studio,
+.report-builder,
+.exports-hub,
+.workbench-nav {
+  border-color: var(--border-soft);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.topbar {
+  margin-bottom: 0;
+}
+
+.workbench-nav {
+  top: 12px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding: 6px;
+}
+
+.workbench-nav button {
+  min-height: 54px;
+  padding: 9px 11px;
+}
+
+.workbench-nav button.active {
+  background: #ecfeff;
+  color: var(--accent-strong);
+  box-shadow: none;
+}
+
+.workspace-hero,
+.command-overview-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.workspace-hero {
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+  align-items: stretch;
+  padding: 26px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(236, 253, 245, 0.72) 54%, rgba(239, 246, 255, 0.82));
+  box-shadow: var(--shadow-strong);
+}
+
+.workspace-hero-copy {
+  display: grid;
+  align-content: center;
+  gap: 14px;
+}
+
+.workspace-hero-copy h2 {
+  max-width: 760px;
+  font-size: 2rem;
+  line-height: 1.12;
+}
+
+.workspace-hero-copy > span {
+  max-width: 760px;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.hero-actions,
+.download-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hero-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.hero-status-grid > article,
+.dataset-readiness,
+.workflow-cards article,
+.upload-guidance article,
+.builder-helper {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.hero-status-grid > article,
+.workflow-cards article,
+.upload-guidance article {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+}
+
+.hero-status-grid span,
+.workflow-cards span,
+.dataset-readiness span,
+.upload-guidance span,
+.panel-subtitle,
+.builder-helper span {
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.hero-status-grid strong,
+.workflow-cards strong,
+.dataset-readiness h3,
+.upload-guidance strong,
+.builder-helper strong {
+  color: var(--ink);
+  font-weight: 620;
+}
+
+.dataset-readiness {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.readiness-strip,
+.supported-file-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.readiness-strip span,
+.supported-file-strip span {
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #ecfeff;
+  color: var(--accent-strong);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.readiness-score {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.readiness-score strong {
+  color: var(--accent-strong);
+  font-size: 1.45rem;
+}
+
+.workflow-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.command-overview-shell + .control-bar,
+.section-stack > .control-bar {
+  margin-top: 0;
+}
+
+.upload-panel {
+  background: var(--surface);
+}
+
+.panel-subtitle {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.92rem;
+}
+
+.upload-dropzone {
+  gap: 10px;
+  padding: 22px;
+  border-color: rgba(15, 118, 110, 0.28);
+  background: #f0fdfa;
+}
+
+.upload-dropzone strong {
+  font-size: 1.05rem;
+}
+
+.upload-guidance {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.upload-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cta-button,
+.secondary-button,
+.install-button {
+  box-shadow: none;
+}
+
+.cta-button {
+  background: var(--accent-strong);
+}
+
+.install-button {
+  background: var(--accent-blue);
+  border-color: rgba(37, 99, 235, 0.24);
+}
+
+.metric-card,
+.analysis-option-detail,
+.filter-view-detail,
+.analysis-table-card,
+.segment-driver,
+.market-signal,
+.learning-summary,
+.role-chip,
+.export-card,
+.export-row,
+.builder-controls,
+.report-preview,
+.analysis-result-panel,
+.studio-empty {
+  border-color: var(--border-soft);
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.metric-card {
+  min-height: 112px;
+}
+
+.method-group-list {
+  display: grid;
+  gap: 16px;
+}
+
+.method-group {
+  display: grid;
+  gap: 9px;
+}
+
+.method-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.method-grid button {
+  min-height: 94px;
+  background: #ffffff;
+}
+
+.method-grid button.active {
+  background: #eff6ff;
+  box-shadow: none;
+}
+
+.builder-helper {
+  display: grid;
+  gap: 6px;
+  padding: 13px;
+}
+
+.report-preview {
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+.export-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.export-card {
+  min-height: 118px;
+}
+
+@media (max-width: 1120px) {
+  .workspace-hero,
+  .workflow-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-status-grid,
+  .upload-guidance,
+  .method-grid,
+  .export-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .workspace-hero {
+    padding: 18px;
+  }
+
+  .workspace-hero-copy h2 {
+    font-size: 1.55rem;
+  }
+
+  .hero-status-grid,
+  .upload-guidance,
+  .method-grid,
+  .export-grid,
+  .workflow-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-actions .cta-button,
+  .hero-actions .secondary-button,
+  .download-actions .secondary-button,
+  .download-actions .install-button {
+    width: 100%;
+  }
+}

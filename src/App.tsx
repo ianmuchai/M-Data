@@ -76,7 +76,7 @@ function App() {
 
       {activeSection === 'overview' ? (
         <div className="section-stack">
-          <CommandOverview dashboard={data ?? null} latestUpload={latestUpload} loading={loading} onNavigate={setActiveSection} />
+          <CommandOverview appName={appConfig.appName} companyName={appConfig.companyName} dashboard={data ?? null} latestUpload={latestUpload} loading={loading} onNavigate={setActiveSection} />
           <DashboardControls
             categories={data?.categories ?? fallbackCategories}
             category={category}
@@ -110,3 +110,4 @@ function App() {
 }
 
 export default App;
+

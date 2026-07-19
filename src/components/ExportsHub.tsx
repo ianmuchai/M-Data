@@ -1,5 +1,6 @@
 import type { AnalyticsResponse, ReportBuilderConfig, UploadAnalysisResponse } from '../../shared/analytics';
 import { numberFormatter } from '../lib/format';
+import { downloadAnalysisWorkbook, downloadUploadAnalysisJson } from '../lib/uploadExports';
 
 type ExportsHubProps = {
   dashboard: AnalyticsResponse | null;
@@ -32,13 +33,21 @@ export function ExportsHub({ dashboard, onExportCsv, onExportJson, upload }: Exp
     <section className="exports-hub">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Exports Hub</p>
-          <h3>Centralized outputs for dashboards, filtered data, and report setup</h3>
+          <p className="eyebrow">Downloads Hub</p>
+          <h3>Download dashboard files, analyzed summaries, workbooks, and focused Excel views</h3>
         </div>
-        <span className="badge">{upload ? `${upload.filterViews.length} Excel views` : 'Dashboard exports'}</span>
+        <span className="badge">{upload ? `${upload.filterViews.length} Excel views` : 'Upload data for more downloads'}</span>
       </div>
 
       <div className="export-grid">
+        <article className="export-card">
+          <div><strong>Analyzed summary</strong><span>Download the latest uploaded dataset profile, methods, recommendations, and results as JSON.</span></div>
+          <button className="secondary-button" disabled={!upload} onClick={() => upload && downloadUploadAnalysisJson(upload)} type="button">Export JSON</button>
+        </article>
+        <article className="export-card">
+          <div><strong>Analysis workbook</strong><span>Download a compact Excel workbook with metrics, columns, methods, results, filtered views, and recommendations.</span></div>
+          <button className="install-button" disabled={!upload} onClick={() => upload && downloadAnalysisWorkbook(upload)} type="button">Download workbook</button>
+        </article>
         <article className="export-card">
           <div><strong>Dashboard CSV</strong><span>Export the built-in executive analytics as spreadsheet-ready rows.</span></div>
           <button className="secondary-button" disabled={!dashboard} onClick={onExportCsv} type="button">Export CSV</button>
@@ -48,8 +57,8 @@ export function ExportsHub({ dashboard, onExportCsv, onExportJson, upload }: Exp
           <button className="secondary-button" disabled={!dashboard} onClick={onExportJson} type="button">Export JSON</button>
         </article>
         <article className="export-card">
-          <div><strong>Report config</strong><span>Download the current starter report setup as JSON.</span></div>
-          <button className="secondary-button" onClick={() => downloadJson('m-data-report-config.json', reportConfig)} type="button">Export config</button>
+          <div><strong>Report setup</strong><span>Download the current starter report configuration as JSON.</span></div>
+          <button className="secondary-button" onClick={() => downloadJson('m-data-report-config.json', reportConfig)} type="button">Export setup</button>
         </article>
       </div>
 
@@ -69,7 +78,7 @@ export function ExportsHub({ dashboard, onExportCsv, onExportJson, upload }: Exp
                   <strong>{view.title}</strong>
                   <span>{numberFormatter.format(view.rowCount)} rows | matched by {view.matchedBy}</span>
                 </div>
-                <small>Open Data section to preview and download this Excel view.</small>
+                <small>Open Data to preview and download this focused Excel file.</small>
               </article>
             ))}
           </div>
@@ -77,7 +86,7 @@ export function ExportsHub({ dashboard, onExportCsv, onExportJson, upload }: Exp
       ) : (
         <div className="state-panel compact-state">
           <strong>No uploaded export views yet</strong>
-          <span>Upload a file in Data to generate targeted Excel exports.</span>
+          <span>Upload a file in Data to unlock analyzed summaries, workbooks, and targeted Excel exports.</span>
         </div>
       )}
     </section>

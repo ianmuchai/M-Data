@@ -7,6 +7,13 @@ type AnalysisStudioProps = {
   onUploadRequest: () => void;
 };
 
+const methodGroups: Array<{ title: string; methods: AdvancedAnalysisMethodKey[] }> = [
+  { title: 'Explain', methods: ['regression', 'correlation'] },
+  { title: 'Predict', methods: ['forecasting', 'trend'] },
+  { title: 'Detect', methods: ['anomaly-detection', 'distribution'] },
+  { title: 'Compare', methods: ['segmentation', 'ranking'] },
+  { title: 'Plan', methods: ['what-if'] },
+];
 function ResultTable({ result }: { result: AdvancedAnalysisResult }) {
   const columns = Array.from(new Set(result.rows.flatMap((row) => Object.keys(row.cells)))).slice(0, 6);
   if (!result.rows.length || !columns.length) return null;
@@ -85,19 +92,26 @@ export function AnalysisStudio({ analysis, onUploadRequest }: AnalysisStudioProp
         <span className="badge">{numberFormatter.format(analysis.rowCount)} rows</span>
       </div>
 
-      <div className="method-grid" aria-label="Available analytical methods">
-        {analysis.advancedAnalytics.methods.map((method) => (
-          <button
-            className={selectedMethod === method.key ? 'active' : undefined}
-            data-tooltip={method.enabled ? method.description : method.disabledReason}
-            disabled={!method.enabled}
-            key={method.key}
-            onClick={() => setSelectedMethod(method.key)}
-            type="button"
-          >
-            <strong>{method.title}</strong>
-            <span>{method.enabled ? `${method.suggestedFields.slice(0, 3).join(', ') || 'Ready'}` : method.disabledReason}</span>
-          </button>
+      <div className="method-group-list" aria-label="Available analytical methods">
+        {methodGroups.map((group) => (
+          <section className="method-group" key={group.title}>
+            <p className="eyebrow">{group.title}</p>
+            <div className="method-grid">
+              {analysis.advancedAnalytics.methods.filter((method) => group.methods.includes(method.key)).map((method) => (
+                <button
+                  className={selectedMethod === method.key ? 'active' : undefined}
+                  data-tooltip={method.enabled ? method.description : method.disabledReason}
+                  disabled={!method.enabled}
+                  key={method.key}
+                  onClick={() => setSelectedMethod(method.key)}
+                  type="button"
+                >
+                  <strong>{method.title}</strong>
+                  <span>{method.enabled ? `${method.suggestedFields.slice(0, 3).join(', ') || 'Ready to use'}` : method.disabledReason}</span>
+                </button>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
 
@@ -144,3 +158,7 @@ export function AnalysisStudio({ analysis, onUploadRequest }: AnalysisStudioProp
     </section>
   );
 }
+
+
+
+

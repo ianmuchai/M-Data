@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import type { UploadAnalysisOption, UploadAnalysisResponse, UploadFilterView } from '../../shared/analytics';
 import { analyzeUploadedData } from '../api/uploadAnalysis';
 import { formatTimestamp, numberFormatter } from '../lib/format';
+import { downloadAnalysisWorkbook, downloadUploadAnalysisJson } from '../lib/uploadExports';
 
 const acceptedTypes =
   '.csv,.tsv,.txt,.json,.xlsx,.xls,.xlsm,.xlsb,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.ms-excel.sheet.binary.macroEnabled.12';
@@ -342,6 +343,7 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
     try {
       const result = await analyzeUploadedData(file);
       setAnalysis(result);
+      onAnalysisComplete?.(result);
       setSelectedOptionKey(result.analysisOptions[0]?.key ?? null);
       setSelectedFilterKey(result.filterViews[0]?.key ?? null);
     } catch (uploadError) {
@@ -358,12 +360,13 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
     <section className="panel upload-panel">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Upload intelligence</p>
-          <h3>Analyse bank, insurance, finance, operations, and enterprise data</h3>
+          <p className="eyebrow">Data workspace</p>
+          <h3>Upload a file and let M-Data prepare the analysis for you</h3>
+          <span className="panel-subtitle">CSV, TSV, TXT, JSON, XLS, XLSX, XLSM, and XLSB files are supported.</span>
         </div>
         <button
           className="install-button"
-          data-tooltip="Upload CSV, JSON, XLS, XLSX, XLSM, or XLSB data"
+          data-tooltip="Upload CSV, TSV, TXT, JSON, XLS, XLSX, XLSM, or XLSB data"
           disabled={loading}
           onClick={() => inputRef.current?.click()}
           type="button"
@@ -390,8 +393,17 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
         role="button"
         tabIndex={0}
       >
-        <strong>Drop in CSV, TSV, JSON, XLS, XLSX, XLSM, or XLSB data</strong>
-        <span>Finds useful business patterns, totals, categories, low stock, risks, filtered views, and Excel exports.</span>
+        <strong>Drop in a spreadsheet, delimited file, or JSON dataset</strong>
+        <span>M-Data profiles fields, detects business meaning, suggests analysis paths, and prepares downloads.</span>
+        <div className="supported-file-strip" aria-label="Supported upload file types">
+          {['CSV', 'TSV', 'TXT', 'JSON', 'XLS', 'XLSX', 'XLSM', 'XLSB'].map((fileType) => <span key={fileType}>{fileType}</span>)}
+        </div>
+      </div>
+
+      <div className="upload-guidance" aria-label="What happens after upload">
+        <article><strong>1. Understand</strong><span>Column types, missing values, business roles, and market signals are detected.</span></article>
+        <article><strong>2. Analyze</strong><span>Compatible methods such as regression, trends, segmentation, and anomalies are prepared.</span></article>
+        <article><strong>3. Download</strong><span>Export filtered Excel views, analyzed summaries, and compact workbooks.</span></article>
       </div>
 
       {error ? <div className="upload-error">{error}</div> : null}
@@ -417,7 +429,13 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
             </div>
           </div>
 
-          <div className="upload-meta">Analysed {formatTimestamp(analysis.generatedAt)}</div>
+          <div className="upload-meta-row">
+            <div className="upload-meta">Analysed {formatTimestamp(analysis.generatedAt)}</div>
+            <div className="download-actions">
+              <button className="secondary-button" onClick={() => downloadUploadAnalysisJson(analysis)} type="button">Download analysis JSON</button>
+              <button className="install-button" onClick={() => downloadAnalysisWorkbook(analysis)} type="button">Download workbook</button>
+            </div>
+          </div>
 
           <div className="metrics-grid upload-metrics" aria-label="Uploaded data metrics">
             {analysis.metrics.map((metric) => (
@@ -527,6 +545,13 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
     </section>
   );
 }
+
+
+
+
+
+
+
 
 
 

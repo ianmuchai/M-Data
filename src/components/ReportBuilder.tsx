@@ -9,6 +9,16 @@ type ReportBuilderProps = {
 const chartTypes: ReportBuilderConfig['chartType'][] = ['bar', 'line', 'area', 'table', 'scorecards'];
 const layouts: ReportBuilderConfig['layout'][] = ['executive', 'analyst', 'operations'];
 
+function downloadReportConfig(config: ReportBuilderConfig) {
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'm-data-report-config.json';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
   const uploadMetricOptions = upload?.columns.filter((column) => column.type === 'number').map((column) => column.name) ?? [];
   const uploadDimensionOptions = upload?.columns.filter((column) => column.type !== 'number').map((column) => column.name) ?? [];
@@ -55,11 +65,12 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
           <p className="eyebrow">Report Builder Lite</p>
           <h3>Create report-ready views from dashboard or uploaded data</h3>
         </div>
-        <span className="badge">In-memory configuration</span>
+        <button className="secondary-button" onClick={() => downloadReportConfig(config)} type="button">Export report setup</button>
       </div>
 
       <div className="builder-grid">
         <aside className="builder-controls" aria-label="Report controls">
+          <div className="builder-helper"><strong>Choose the story</strong><span>Select a source and M-Data will prepare a readable preview from the available fields.</span></div>
           <label>
             <span>Data source</span>
             <select value={config.source} onChange={(event) => update('source', event.target.value as ReportBuilderConfig['source'])}>
@@ -120,3 +131,5 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
     </section>
   );
 }
+
+
