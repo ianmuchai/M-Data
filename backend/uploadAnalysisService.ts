@@ -1,4 +1,4 @@
-﻿import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
 import type {
   ColumnProfile,
   Metric,
@@ -13,6 +13,7 @@ import type {
   UploadRoleInsight,
 } from '../shared/analytics';
 import { getLearnedRole, recordLearning, summarizeLearning } from './learningStore';
+import { buildAdvancedAnalytics } from './advancedAnalysisService';
 
 type DataRow = Record<string, string>;
 
@@ -998,8 +999,10 @@ export function analyzeUpload(fileName: string, content: string, encoding = 'tex
   const signals = buildSignals(columns, rows);
   const analysisOptions = buildAnalysisOptions(columns, rows);
   const filterViews = buildFilterViews(rows, columns);
+  const advancedAnalytics = buildAdvancedAnalytics(rows, columns);
 
   return {
+    advancedAnalytics,
     analysisOptions,
     filterViews,
     columnCount: columns.length,
@@ -1016,6 +1019,8 @@ export function analyzeUpload(fileName: string, content: string, encoding = 'tex
     signals,
   };
 }
+
+
 
 
 

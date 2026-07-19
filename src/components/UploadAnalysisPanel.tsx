@@ -1,4 +1,4 @@
-﻿import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import type { UploadAnalysisOption, UploadAnalysisResponse, UploadFilterView } from '../../shared/analytics';
 import { analyzeUploadedData } from '../api/uploadAnalysis';
@@ -313,7 +313,7 @@ function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption }) {
   );
 }
 
-export function UploadAnalysisPanel() {
+export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete?: (analysis: UploadAnalysisResponse) => void }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [analysis, setAnalysis] = useState<UploadAnalysisResponse | null>(null);
   const [selectedOptionKey, setSelectedOptionKey] = useState<string | null>(null);
@@ -527,6 +527,7 @@ export function UploadAnalysisPanel() {
     </section>
   );
 }
+
 
 
 

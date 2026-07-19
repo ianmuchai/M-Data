@@ -1,4 +1,4 @@
-﻿export type CategoryKey = 'source' | 'channel' | 'region';
+export type CategoryKey = 'source' | 'channel' | 'region';
 export type RangeKey = '7d' | '30d' | '90d';
 
 export type Metric = {
@@ -162,6 +162,82 @@ export type UploadLearningSummary = {
   topColumnRoles: string[];
   message: string;
 };
+export type AdvancedAnalysisMethodKey =
+  | 'regression'
+  | 'correlation'
+  | 'forecasting'
+  | 'anomaly-detection'
+  | 'segmentation'
+  | 'distribution'
+  | 'trend'
+  | 'ranking'
+  | 'what-if';
+
+export type AdvancedAnalysisMethod = {
+  key: AdvancedAnalysisMethodKey;
+  title: string;
+  description: string;
+  enabled: boolean;
+  requiredFields: string[];
+  suggestedFields: string[];
+  disabledReason?: string;
+};
+
+export type AdvancedAnalysisMetric = {
+  label: string;
+  value: string;
+  rawValue?: number;
+  sentiment: 'positive' | 'neutral' | 'warning' | 'negative';
+};
+
+export type AdvancedAnalysisSeriesPoint = {
+  name: string;
+  value: number;
+  comparison?: number;
+  kind?: 'actual' | 'forecast' | 'prediction' | 'bucket';
+};
+
+export type AdvancedAnalysisRow = {
+  label: string;
+  cells: Record<string, string | number>;
+};
+
+export type AdvancedAnalysisResult = {
+  method: AdvancedAnalysisMethodKey;
+  title: string;
+  status: 'ready' | 'unavailable';
+  summary: string;
+  primaryFields: Record<string, string>;
+  metrics: AdvancedAnalysisMetric[];
+  series: AdvancedAnalysisSeriesPoint[];
+  rows: AdvancedAnalysisRow[];
+  warnings: string[];
+  recommendations: string[];
+};
+
+export type AdvancedAnalyticsSummary = {
+  methods: AdvancedAnalysisMethod[];
+  results: AdvancedAnalysisResult[];
+  recommendedMethodKeys: AdvancedAnalysisMethodKey[];
+};
+
+export type ReportBuilderConfig = {
+  source: 'dashboard' | 'upload';
+  chartType: 'bar' | 'line' | 'area' | 'table' | 'scorecards';
+  metric: string;
+  dimension: string;
+  filter: string;
+  layout: 'executive' | 'analyst' | 'operations';
+};
+
+export type ReportBuilderPreview = {
+  title: string;
+  subtitle: string;
+  metrics: Metric[];
+  series: AdvancedAnalysisSeriesPoint[];
+  rows: AdvancedAnalysisRow[];
+  recommendations: string[];
+};
 export type UploadAnalysisResponse = {
   fileName: string;
   generatedAt: string;
@@ -174,10 +250,12 @@ export type UploadAnalysisResponse = {
   roleInsights: UploadRoleInsight[];
   marketSignals: UploadMarketSignal[];
   learningSummary: UploadLearningSummary;
+  advancedAnalytics: AdvancedAnalyticsSummary;
   analysisOptions: UploadAnalysisOption[];
   filterViews: UploadFilterView[];
   recommendations: string[];
 };
+
 
 
 

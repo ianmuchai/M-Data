@@ -1436,3 +1436,379 @@ h3,
     grid-template-columns: 1fr;
   }
 }
+
+.modern-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.section-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.workbench-nav {
+  position: sticky;
+  top: 10px;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.workbench-nav button {
+  display: grid;
+  min-height: 58px;
+  gap: 4px;
+  align-content: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #526071;
+  cursor: pointer;
+  text-align: left;
+}
+
+.workbench-nav button strong,
+.export-card strong,
+.export-row strong {
+  font-weight: 620;
+}
+
+.workbench-nav button span,
+.export-card span,
+.export-row span,
+.export-row small,
+.report-preview .panel-header span,
+.studio-empty span {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.workbench-nav button.active {
+  border-color: rgba(0, 166, 166, 0.22);
+  background: linear-gradient(135deg, #ffffff, #ecfeff 56%, #fff7ed);
+  color: var(--accent-strong);
+  box-shadow: 0 10px 24px rgba(0, 125, 125, 0.12);
+}
+
+.command-overview,
+.analysis-studio,
+.report-builder,
+.exports-hub {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.command-overview {
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.45fr);
+  align-items: stretch;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.94), rgba(236, 253, 245, 0.76), rgba(239, 246, 255, 0.8)),
+    var(--surface);
+}
+
+.command-copy {
+  display: grid;
+  align-content: center;
+  gap: 16px;
+}
+
+.command-actions,
+.field-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.command-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.command-grid article,
+.export-card,
+.export-row,
+.builder-controls,
+.report-preview,
+.analysis-result-panel,
+.studio-empty {
+  border: 1px solid rgba(36, 49, 75, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 10px 24px rgba(31, 41, 55, 0.07);
+}
+
+.command-grid article {
+  display: grid;
+  gap: 8px;
+  min-height: 138px;
+  padding: 15px;
+}
+
+.command-grid span,
+.builder-controls label span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.command-grid strong {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 1.18rem;
+  font-weight: 620;
+}
+
+.command-grid small {
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.method-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.method-grid button {
+  display: grid;
+  min-height: 104px;
+  gap: 8px;
+  align-content: start;
+  border: 1px solid rgba(36, 49, 75, 0.12);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.method-grid button.active {
+  border-color: rgba(37, 99, 235, 0.28);
+  background: linear-gradient(135deg, #ffffff, #eff6ff 48%, #ecfeff);
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.12);
+}
+
+.method-grid button:disabled {
+  background: rgba(241, 245, 249, 0.7);
+}
+
+.method-grid strong {
+  font-weight: 620;
+}
+
+.method-grid span {
+  color: var(--text-muted);
+  font-size: 0.83rem;
+  line-height: 1.35;
+}
+
+.analysis-result-panel,
+.studio-empty {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.field-pill-row span {
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.82rem;
+}
+
+.field-pill-row b {
+  margin-right: 4px;
+}
+
+.mini-series,
+.report-bars {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  min-height: 160px;
+  padding: 14px;
+  border: 1px solid rgba(0, 166, 166, 0.1);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(236, 253, 245, 0.54), rgba(255, 255, 255, 0.7));
+}
+
+.mini-series-point {
+  display: grid;
+  flex: 1;
+  min-width: 24px;
+  height: 132px;
+  align-items: end;
+  gap: 6px;
+}
+
+.mini-series-point span,
+.report-bars span {
+  display: block;
+  min-height: 10px;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, var(--accent), var(--accent-blue));
+}
+
+.mini-series-point.forecast span {
+  background: linear-gradient(180deg, var(--gold), var(--coral));
+}
+
+.mini-series-point small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-analysis-table {
+  min-width: 720px;
+}
+
+.builder-grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.builder-controls {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 14px;
+}
+
+.builder-controls label {
+  display: grid;
+  gap: 6px;
+}
+
+.builder-controls select {
+  min-height: 40px;
+  border: 1px solid rgba(36, 49, 75, 0.14);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.report-preview {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.report-preview.operations {
+  border-left: 4px solid var(--gold);
+}
+
+.report-preview.analyst {
+  border-left: 4px solid var(--accent-blue);
+}
+
+.report-bars {
+  min-height: 190px;
+}
+
+.report-bars span {
+  flex: 1;
+  background: linear-gradient(180deg, var(--accent-blue), var(--accent));
+}
+
+.export-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.export-card {
+  display: flex;
+  min-height: 126px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px;
+}
+
+.export-card div,
+.export-row div {
+  display: grid;
+  gap: 5px;
+}
+
+.export-list {
+  display: grid;
+  gap: 10px;
+}
+
+.export-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 14px;
+}
+
+.compact-state {
+  min-height: 150px;
+}
+
+@media (max-width: 1080px) {
+  .command-overview,
+  .builder-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .method-grid,
+  .export-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .workbench-nav,
+  .command-grid,
+  .method-grid,
+  .export-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workbench-nav {
+    position: static;
+  }
+
+  .export-card,
+  .export-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mini-series,
+  .report-bars {
+    overflow-x: auto;
+  }
+
+  .mini-series-point {
+    flex: 0 0 34px;
+  }
+}
