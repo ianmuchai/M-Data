@@ -94,7 +94,7 @@ export function AnalysisStudio({ analysis, onUploadRequest }: AnalysisStudioProp
 
       <div className="method-group-list" aria-label="Available analytical methods">
         {methodGroups.map((group) => (
-          <section className="method-group" key={group.title}>
+          <section className={`method-group ${group.title.toLowerCase()}`} key={group.title}>
             <p className="eyebrow">{group.title}</p>
             <div className="method-grid">
               {analysis.advancedAnalytics.methods.filter((method) => group.methods.includes(method.key)).map((method) => (
@@ -158,6 +158,7 @@ export function AnalysisStudio({ analysis, onUploadRequest }: AnalysisStudioProp
     </section>
   );
 }
+
 
 
 

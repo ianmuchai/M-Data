@@ -120,7 +120,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
               </article>
             ))}
           </div>
-          <div className="report-bars">
+          <div className={`report-bars ${config.chartType}`}>
             {preview.series.slice(0, 12).map((point) => <span key={point.name} style={{ height: `${Math.max(12, point.value / Math.max(...preview.series.map((item) => item.value), 1) * 100)}%` }} title={`${point.name}: ${point.value}`} />)}
           </div>
           <div className="recommendation-list">
@@ -131,5 +131,6 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
     </section>
   );
 }
+
 
 

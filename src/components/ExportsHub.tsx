@@ -40,23 +40,23 @@ export function ExportsHub({ dashboard, onExportCsv, onExportJson, upload }: Exp
       </div>
 
       <div className="export-grid">
-        <article className="export-card">
+        <article className="export-card premium">
           <div><strong>Analyzed summary</strong><span>Download the latest uploaded dataset profile, methods, recommendations, and results as JSON.</span></div>
           <button className="secondary-button" disabled={!upload} onClick={() => upload && downloadUploadAnalysisJson(upload)} type="button">Export JSON</button>
         </article>
-        <article className="export-card">
+        <article className="export-card premium">
           <div><strong>Analysis workbook</strong><span>Download a compact Excel workbook with metrics, columns, methods, results, filtered views, and recommendations.</span></div>
           <button className="install-button" disabled={!upload} onClick={() => upload && downloadAnalysisWorkbook(upload)} type="button">Download workbook</button>
         </article>
-        <article className="export-card">
+        <article className="export-card premium">
           <div><strong>Dashboard CSV</strong><span>Export the built-in executive analytics as spreadsheet-ready rows.</span></div>
           <button className="secondary-button" disabled={!dashboard} onClick={onExportCsv} type="button">Export CSV</button>
         </article>
-        <article className="export-card">
+        <article className="export-card premium">
           <div><strong>Dashboard JSON</strong><span>Export metrics, trend, alerts, and breakdown data for integrations.</span></div>
           <button className="secondary-button" disabled={!dashboard} onClick={onExportJson} type="button">Export JSON</button>
         </article>
-        <article className="export-card">
+        <article className="export-card premium">
           <div><strong>Report setup</strong><span>Download the current starter report configuration as JSON.</span></div>
           <button className="secondary-button" onClick={() => downloadJson('m-data-report-config.json', reportConfig)} type="button">Export setup</button>
         </article>
@@ -92,3 +92,5 @@ export function ExportsHub({ dashboard, onExportCsv, onExportJson, upload }: Exp
     </section>
   );
 }
+
+
