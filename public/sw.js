@@ -1,4 +1,4 @@
-const CACHE_NAME = 'm-data-shell-v1';
+const CACHE_NAME = 'm-data-shell-v2';
 const APP_SHELL = ['/', '/index.html', '/offline.html', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -32,3 +32,4 @@ self.addEventListener('fetch', (event) => {
       .catch(() => caches.match(request).then((cached) => cached || caches.match('/offline.html'))),
   );
 });
+
