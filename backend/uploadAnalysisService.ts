@@ -16,6 +16,7 @@ import { getLearnedRole, recordLearning, summarizeLearning } from './learningSto
 import { buildAdvancedAnalytics } from './advancedAnalysisService';
 
 type DataRow = Record<string, string>;
+type UploadedRow = Record<string, unknown>;
 
 const numericHints = ['amount', 'balance', 'revenue', 'premium', 'claim', 'loss', 'price', 'cost', 'income', 'score', 'risk', 'unit', 'quantity', 'qty', 'volume', 'sales'];
 const riskHints = ['risk', 'fraud', 'claim', 'default', 'loss', 'delinquent', 'overdue', 'chargeback'];
@@ -976,8 +977,14 @@ function buildRecommendations(columns: ColumnProfile[], signals: UploadSignal[])
   return recommendations;
 }
 
-export function analyzeUpload(fileName: string, content: string, encoding = 'text'): UploadAnalysisResponse {
-  const rows = parseRows(fileName, content, encoding).slice(0, 10000);
+function normalizeUploadedRows(rows: UploadedRow[]): DataRow[] {
+  return rows
+    .map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, stringifyCell(value)])))
+    .filter((row) => Object.values(row).some((value) => value.trim() !== ''));
+}
+
+export function analyzeRows(fileName: string, uploadedRows: UploadedRow[]): UploadAnalysisResponse {
+  const rows = normalizeUploadedRows(uploadedRows).slice(0, 10000);
 
   if (rows.length === 0) {
     throw new Error('No rows could be parsed. Ensure the first sheet has a header row and at least one data row.');
@@ -1019,15 +1026,7 @@ export function analyzeUpload(fileName: string, content: string, encoding = 'tex
     signals,
   };
 }
-
-
-
-
-
-
-
-
-
-
-
+export function analyzeUpload(fileName: string, content: string, encoding = 'text'): UploadAnalysisResponse {
+  return analyzeRows(fileName, parseRows(fileName, content, encoding));
+}
 

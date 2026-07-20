@@ -2,7 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import { categories, ranges } from './analyticsData';
 import { buildAnalyticsResponse, normalizeCategory, normalizeRange } from './analyticsService';
-import { analyzeUpload } from './uploadAnalysisService';
+import { analyzeRows, analyzeUpload } from './uploadAnalysisService';
 import { isAllowedCorsOrigin, parseAllowedOrigins } from './corsPolicy';
 
 const app = express();
@@ -43,16 +43,17 @@ app.get('/api/analytics', (request, response) => {
 
 app.post('/api/analyze-upload', async (request, response) => {
   const fileName = typeof request.body?.fileName === 'string' ? request.body.fileName : 'uploaded-data.csv';
+  const rows = Array.isArray(request.body?.rows) ? request.body.rows : null;
   const content = typeof request.body?.content === 'string' ? request.body.content : '';
   const encoding = request.body?.encoding === 'base64' ? 'base64' : 'text';
 
-  if (!content.trim()) {
+  if (!rows && !content.trim()) {
     response.status(400).json({ error: 'No file content provided' });
     return;
   }
 
   try {
-    response.json(await analyzeUpload(fileName, content, encoding));
+    response.json(rows ? await analyzeRows(fileName, rows) : await analyzeUpload(fileName, content, encoding));
   } catch (error) {
     response.status(400).json({ error: error instanceof Error ? error.message : 'Unable to analyse file' });
   }
@@ -70,4 +71,5 @@ if (!process.env.VERCEL) {
 
 export { app };
 export default app;
+
 
