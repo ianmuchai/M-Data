@@ -1,4 +1,4 @@
-﻿# M-Data Analytics deployment
+# M-Data Analytics deployment
 
 This app is designed to be distributed to different companies from the same codebase.
 
@@ -49,3 +49,4 @@ Set environment variables per tenant:
 PORT=4000
 CORS_ORIGIN=https://analytics.customer.example
 ```
+
