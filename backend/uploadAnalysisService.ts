@@ -779,7 +779,7 @@ function buildMetrics(rows: DataRow[], columns: ColumnProfile[], qualityScore: n
   ];
 }
 
-function sanitizeRowsForExport(rows: DataRow[], limit = 5000) {
+function sanitizeRowsForExport(rows: DataRow[], limit = 250) {
   return rows.slice(0, limit).map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, stringifyCell(value)])));
 }
 
@@ -1029,4 +1029,5 @@ export function analyzeRows(fileName: string, uploadedRows: UploadedRow[]): Uplo
 export function analyzeUpload(fileName: string, content: string, encoding = 'text'): UploadAnalysisResponse {
   return analyzeRows(fileName, parseRows(fileName, content, encoding));
 }
+
 
