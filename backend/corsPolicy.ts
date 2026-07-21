@@ -1,4 +1,5 @@
 const localDevelopmentOriginPattern = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/;
+const vercelOriginPattern = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
 export function parseAllowedOrigins(value: string | undefined) {
   return (value ?? '')
@@ -10,7 +11,8 @@ export function parseAllowedOrigins(value: string | undefined) {
 export function isAllowedCorsOrigin(origin: string | undefined, allowedOrigins: string[]) {
   if (!origin) return true;
   if (allowedOrigins.includes(origin)) return true;
-  if (allowedOrigins.length === 0 && localDevelopmentOriginPattern.test(origin)) return true;
+  if (allowedOrigins.length === 0 && (localDevelopmentOriginPattern.test(origin) || vercelOriginPattern.test(origin))) return true;
   return false;
 }
+
 
