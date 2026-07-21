@@ -1,5 +1,5 @@
-const CACHE_NAME = 'm-data-shell-v3';
-const APP_SHELL = ['/', '/index.html', '/offline.html', '/manifest.json', '/bizyako-logo.png'];
+const CACHE_NAME = 'm-data-shell-v4';
+const APP_SHELL = ['/', '/index.html', '/offline.html', '/manifest.json', '/bizyako-logo-square.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -32,5 +32,7 @@ self.addEventListener('fetch', (event) => {
       .catch(() => caches.match(request).then((cached) => cached || caches.match('/offline.html'))),
   );
 });
+
+
 
 

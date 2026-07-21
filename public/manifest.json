@@ -9,8 +9,8 @@
     "description":  "A focused operating dashboard for analytics, segments, alerts, and performance trends.",
     "icons":  [
                   {
-                      "src":  "/bizyako-logo.png",
-                      "sizes":  "633x464",
+                      "src":  "/bizyako-logo-square.png",
+                      "sizes":  "415x415",
                       "type":  "image/png",
                       "purpose":  "any"
                   }
@@ -21,3 +21,4 @@
                    ],
     "orientation":  "any"
 }
+
