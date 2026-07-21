@@ -66,8 +66,8 @@ function App() {
       />
 
       {!pwaInstall.canInstall && !pwaInstall.isInstalled ? (
-        <section className="install-hint" aria-label="Install M-Data">
-          <strong>Install M-Data on your phone</strong>
+        <section className="install-hint" aria-label="Install BizDATA">
+          <strong>Install BizDATA on your phone</strong>
           <span>Open this site in your mobile browser menu and choose Add to Home Screen.</span>
         </section>
       ) : null}
@@ -110,4 +110,5 @@ function App() {
 }
 
 export default App;
+
 

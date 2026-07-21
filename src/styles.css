@@ -2725,3 +2725,85 @@ body {
     font-size: 1.38rem;
   }
 }
+
+/* BizDATA brand refresh */
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 180px;
+}
+
+.brand-mark {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 13px;
+  box-shadow: 0 12px 26px rgba(8, 189, 148, 0.22);
+}
+
+.brand-lockup .eyebrow {
+  margin: 0;
+  color: #05795f;
+  font-size: 0.82rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: minmax(150px, auto) minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.topbar-actions {
+  justify-self: end;
+}
+
+.bizyako-header-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(8, 189, 148, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 10px 24px rgba(8, 189, 148, 0.16);
+}
+
+.bizyako-header-logo img {
+  width: 34px;
+  height: 34px;
+  display: block;
+}
+
+@media (max-width: 920px) {
+  .topbar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .topbar-actions {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .brand-lockup {
+    min-width: 0;
+  }
+
+  .brand-mark,
+  .bizyako-header-logo {
+    width: 42px;
+    height: 42px;
+  }
+
+  .bizyako-header-logo img {
+    width: 30px;
+    height: 30px;
+  }
+}

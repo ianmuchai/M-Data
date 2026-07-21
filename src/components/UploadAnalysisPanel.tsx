@@ -361,7 +361,7 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
       <div className="panel-header">
         <div>
           <p className="eyebrow">Data workspace</p>
-          <h3>Upload a file and let M-Data prepare the analysis for you</h3>
+          <h3>Upload a file and let BizDATA prepare the analysis for you</h3>
           <span className="panel-subtitle">CSV, TSV, TXT, JSON, XLS, XLSX, XLSM, and XLSB files are supported.</span>
         </div>
         <button
@@ -394,7 +394,7 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
         tabIndex={0}
       >
         <strong>Drop in a spreadsheet, delimited file, or JSON dataset</strong>
-        <span>M-Data profiles fields, detects business meaning, suggests analysis paths, and prepares downloads.</span>
+        <span>BizDATA profiles fields, detects business meaning, suggests analysis paths, and prepares downloads.</span>
         <div className="supported-file-strip" aria-label="Supported upload file types">
           {['CSV', 'TSV', 'TXT', 'JSON', 'XLS', 'XLSX', 'XLSM', 'XLSB'].map((fileType) => <span key={fileType}>{fileType}</span>)}
         </div>
@@ -545,6 +545,7 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
     </section>
   );
 }
+
 
 
 

@@ -34,7 +34,7 @@ export function WorkspaceHero({ appName, companyName, dashboard, latestUpload, l
         <span>
           {companyName} can upload spreadsheets or JSON, inspect data quality, run guided analysis, build reports, and export polished results from one lively workspace.
         </span>
-        <div className="hero-actions" aria-label="Common M-Data actions">
+        <div className="hero-actions" aria-label="Common BizDATA actions">
           <button className="cta-button" onClick={() => onNavigate('data')} type="button">Upload a file</button>
           <button className="secondary-button" disabled={!latestUpload} onClick={() => onNavigate('analyze')} type="button">Analyze latest data</button>
           <button className="secondary-button" onClick={() => onNavigate('reports')} type="button">Build a report</button>
@@ -80,4 +80,6 @@ export function WorkspaceHero({ appName, companyName, dashboard, latestUpload, l
     </section>
   );
 }
+
+
 

@@ -1,4 +1,4 @@
-﻿type TopbarProps = {
+type TopbarProps = {
   appName: string;
   companyName: string;
   autoRefresh: boolean;
@@ -14,7 +14,6 @@
 };
 
 export function Topbar({
-  appName,
   companyName,
   autoRefresh,
   canExport,
@@ -29,9 +28,11 @@ export function Topbar({
 }: TopbarProps) {
   return (
     <header className="topbar">
-      <div>
-        <p className="eyebrow">{companyName}</p>
-        <h1>{appName}</h1>
+      <div className="brand-lockup" aria-label="BizDATA workspace">
+        <img className="brand-mark" src="/bizyako-logo.svg" alt="" aria-hidden="true" />
+        <div>
+          <p className="eyebrow">{companyName}</p>
+        </div>
       </div>
       <div className="topbar-actions">
         <span className="sync-status" data-tooltip="Last time data refreshed">Updated {generatedAt}</span>
@@ -43,7 +44,7 @@ export function Topbar({
           Refresh
         </button>
         {showInstall ? (
-          <button className="install-button" data-tooltip="Add M-Data to your device" onClick={onInstall}>
+          <button className="install-button" data-tooltip="Add BizDATA to your device" onClick={onInstall}>
             Install app
           </button>
         ) : null}
@@ -54,6 +55,9 @@ export function Topbar({
           Export JSON
         </button>
       </div>
+      <a className="bizyako-header-logo" href="https://bizyako.com" aria-label="BizYako" data-tooltip="BizYako">
+        <img src="/bizyako-logo.svg" alt="BizYako" />
+      </a>
     </header>
   );
 }

@@ -42,7 +42,7 @@ function safeName(value: string) {
 
 function sourceTitle(source: VisualStorySource, dashboard: AnalyticsResponse | null, upload: UploadAnalysisResponse | null) {
   if (source === 'upload' && upload) return upload.fileName;
-  return dashboard ? 'Executive dashboard' : 'M-Data report';
+  return dashboard ? 'Executive dashboard' : 'BizDATA report';
 }
 
 function uploadResult(upload: UploadAnalysisResponse | null) {
@@ -107,7 +107,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
       'Executive Summary',
       deckTitle,
       presetIntro(config.preset),
-      preview.insights[0] ?? 'M-Data prepared this presentation from the available analytics.',
+      preview.insights[0] ?? 'BizDATA prepared this presentation from the available analytics.',
       preview.metrics.slice(0, 4),
       preview.insights.slice(0, 4),
       preview.series.slice(0, 10),
@@ -139,7 +139,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
       'analysis',
       'Analysis Findings',
       result?.title ?? 'Trends, segments, and comparisons',
-      result?.summary ?? dashboard?.summary.recommendation ?? 'M-Data prepared analysis points from the available data.',
+      result?.summary ?? dashboard?.summary.recommendation ?? 'BizDATA prepared analysis points from the available data.',
       'This slide summarizes the strongest available analysis result and gives the audience supporting evidence.',
       result ? advancedMetricsToMetrics(result.metrics) : preview.metrics.slice(0, 4),
       result?.rows.slice(0, 6).map((row) => `${row.label}: ${Object.values(row.cells).join(' | ')}`) ?? preview.rows.slice(0, 6).map((row) => row.label),
@@ -195,6 +195,7 @@ export function downloadPresentationHtml(deck: PresentationDeck) {
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(deck.title)}</title><style>body{margin:0;background:#eef7fb;color:#0f172a;font-family:Inter,Segoe UI,sans-serif}.deck{display:grid;gap:24px;max-width:1180px;margin:0 auto;padding:32px}.slide{min-height:560px;padding:34px;border:1px solid rgba(15,23,42,.12);border-radius:8px;background:linear-gradient(135deg,#fff,#ecfeff 56%,#eff6ff);box-shadow:0 18px 46px rgba(15,23,42,.12)}p{color:#64748b}h1{font-size:42px;margin:8px 0}h2{font-size:20px;color:#2563eb}.narrative{font-size:18px;line-height:1.55}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.metrics article{padding:14px;border-radius:8px;background:#fff}.metrics span,.metrics small{display:block;color:#64748b}.metrics strong{display:block;font-size:24px}.bars{display:flex;align-items:end;gap:8px;height:130px;margin-top:20px}.bars span{flex:1;background:linear-gradient(180deg,#7c3aed,#2563eb,#06b6d4);border-radius:6px 6px 0 0}li{margin:8px 0}</style></head><body><main class="deck">${slides}</main></body></html>`;
   downloadBlob(`${safeName(deck.title)}.html`, html, 'text/html');
 }
+
 
 
 

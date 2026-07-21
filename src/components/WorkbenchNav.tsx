@@ -16,7 +16,7 @@ const sections: Array<{ key: WorkbenchSection; label: string; detail: string; re
 
 export function WorkbenchNav({ activeSection, hasUpload, onSectionChange }: WorkbenchNavProps) {
   return (
-    <nav className="workbench-nav" aria-label="M-Data workspace sections">
+    <nav className="workbench-nav" aria-label="BizDATA workspace sections">
       {sections.map((section) => (
         <button
           className={activeSection === section.key ? 'active' : undefined}
@@ -32,4 +32,5 @@ export function WorkbenchNav({ activeSection, hasUpload, onSectionChange }: Work
     </nav>
   );
 }
+
 

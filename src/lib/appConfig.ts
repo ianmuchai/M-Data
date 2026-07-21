@@ -1,4 +1,4 @@
-﻿export type AppConfig = {
+export type AppConfig = {
   appName: string;
   companyName: string;
   industry: string;
@@ -6,8 +6,9 @@
 };
 
 export const defaultAppConfig: AppConfig = {
-  appName: 'M-Data Analytics',
-  companyName: 'M-Data',
+  appName: '',
+  companyName: 'BizDATA',
   industry: 'Financial services, insurance, and enterprise operations',
   supportEmail: 'support@example.com',
 };
+

@@ -26,7 +26,7 @@ export function DatasetReadiness({ upload }: DatasetReadinessProps) {
         <span>
           {upload
             ? `${numberFormatter.format(upload.rowCount)} rows, ${numberFormatter.format(upload.columnCount)} columns, ${readyMethods} analysis methods ready.`
-            : 'M-Data accepts common spreadsheet, delimited, and JSON files.'}
+            : 'BizDATA accepts common spreadsheet, delimited, and JSON files.'}
         </span>
       </div>
       <div className="readiness-strip">
@@ -44,4 +44,5 @@ export function DatasetReadiness({ upload }: DatasetReadinessProps) {
     </aside>
   );
 }
+
 

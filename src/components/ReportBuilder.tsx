@@ -47,7 +47,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
         <div>
           <p className="eyebrow">Visual Story Builder</p>
           <h3>Build visualizations and presentation-ready stories from your analyses</h3>
-          <span className="panel-subtitle">Choose a source, visual style, and audience. M-Data prepares a live visual and a slide-style story you can export.</span>
+          <span className="panel-subtitle">Choose a source, visual style, and audience. BizDATA prepares a live visual and a slide-style story you can export.</span>
         </div>
         <div className="download-actions">
           <button className="secondary-button" onClick={() => downloadStoryConfig(config)} type="button">Export config</button>
@@ -181,3 +181,4 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
     </section>
   );
 }
+
