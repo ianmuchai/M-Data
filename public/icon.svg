@@ -1,7 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
   <title id="title">BizYako logo</title>
-  <desc id="desc">Rounded teal square with white BizYako monogram.</desc>
-  <rect x="52" y="36" width="408" height="440" rx="88" fill="#08bd94"/>
-  <path fill="#ffffff" d="M162 105c0-16 9-25 25-25h31c15 0 24 9 24 25v145c18-24 42-36 73-36 34 0 63 13 87 39 8 9 8 19 2 30l-24 39c-7 12-18 13-28 4-14-13-29-20-47-20-29 0-52 21-52 50 0 31 23 53 55 53h27c15 0 22 12 15 26l-15 31c-5 10-14 15-26 15h-19c-35 0-67-12-94-36-32-28-50-67-50-114V105z"/>
-  <path fill="#ffffff" d="M353 214h70c14 0 22 14 15 26L321 454c-5 10-14 15-25 15h-36c-14 0-22-14-15-26l85-153c5-9 13-14 23-14h28l-43 79 62-126c5-10 14-15 26-15z"/>
+  <desc id="desc">Teal rounded square with a white stylized b and angled y mark.</desc>
+  <rect x="54" y="34" width="404" height="444" rx="88" fill="#08bd94"/>
+
+  <defs>
+    <mask id="bowl-cutout">
+      <rect width="512" height="512" fill="black"/>
+      <rect x="150" y="94" width="48" height="210" rx="12" fill="white"/>
+      <ellipse cx="276" cy="292" rx="92" ry="82" fill="white"/>
+      <ellipse cx="284" cy="306" rx="48" ry="51" fill="black"/>
+      <rect x="190" y="94" width="76" height="140" fill="black"/>
+      <rect x="206" y="236" width="52" height="92" fill="white"/>
+    </mask>
+  </defs>
+
+  <rect x="150" y="94" width="48" height="210" rx="12" fill="#ffffff"/>
+  <ellipse cx="276" cy="292" rx="92" ry="82" fill="#ffffff" mask="url(#bowl-cutout)"/>
+  <path fill="#ffffff" d="M354 248h55c9 0 15 9 10 17L312 428c-4 7-10 10-18 10h-47c-8 0-13-9-9-16l95-163c4-7 11-11 21-11z"/>
 </svg>
