@@ -155,6 +155,18 @@ export type UploadMarketSignal = {
   recommendedParameters: string[];
 };
 
+export type UploadColumnAnalysis = {
+  name: string;
+  type: ColumnProfile['type'];
+  role: string;
+  completeness: number;
+  unique: number;
+  records: number;
+  summary: string;
+  parameters: Array<{ label: string; value: string }>;
+  distribution: Array<{ label: string; value: number; share: number }>;
+  recommendations: string[];
+};
 export type UploadBusinessQuestion = {
   key: string;
   question: string;
@@ -296,11 +308,14 @@ export type UploadAnalysisResponse = {
   marketSignals: UploadMarketSignal[];
   learningSummary: UploadLearningSummary;
   businessQuestions: UploadBusinessQuestion[];
+  columnAnalyses: UploadColumnAnalysis[];
+  analysisRows: Record<string, string>[];
   advancedAnalytics: AdvancedAnalyticsSummary;
   analysisOptions: UploadAnalysisOption[];
   filterViews: UploadFilterView[];
   recommendations: string[];
 };
+
 
 
 

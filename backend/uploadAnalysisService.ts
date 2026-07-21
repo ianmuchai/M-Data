@@ -6,6 +6,7 @@ import type {
   UploadAnalysisResponse,
   UploadBusinessInsight,
   UploadBusinessQuestion,
+  UploadColumnAnalysis,
   UploadFieldStatistic,
   UploadFilterView,
   UploadSegmentBreakdown,
@@ -1017,6 +1018,96 @@ function pctChange(first: number, last: number) {
   return round(((last - first) / Math.abs(first)) * 100);
 }
 
+function buildColumnAnalyses(rows: DataRow[], columns: ColumnProfile[], roleInsights: UploadRoleInsight[]): UploadColumnAnalysis[] {
+  const roleByColumn = new Map(roleInsights.map((insight) => [insight.column, insight.role]));
+
+  return columns.map((column) => {
+    const values = rows.map((row) => row[column.name] ?? '');
+    const filled = values.filter((value) => value.trim() !== '');
+    const completeness = round((filled.length / Math.max(values.length, 1)) * 100);
+    const role = roleByColumn.get(column.name) ?? 'descriptive_attribute';
+    const parameters: Array<{ label: string; value: string }> = [
+      { label: 'Type', value: column.type },
+      { label: 'Completeness', value: `${completeness}%` },
+      { label: 'Unique values', value: formatNumber(column.unique) },
+      { label: 'Missing', value: formatNumber(column.missing) },
+    ];
+    const recommendations: string[] = [];
+    let summary = `${column.name} is a ${column.type} field with ${completeness}% completeness and ${formatNumber(column.unique)} unique values.`;
+    let distribution: Array<{ label: string; value: number; share: number }> = [];
+
+    if (column.type === 'number') {
+      const numbers = filled.filter(isNumber).map(toNumber);
+      const total = numbers.reduce((sum, value) => sum + value, 0);
+      const avg = numbers.length ? total / numbers.length : 0;
+      const med = median(numbers);
+      const min = numbers.length ? Math.min(...numbers) : 0;
+      const max = numbers.length ? Math.max(...numbers) : 0;
+      const spread = max - min;
+      const high = percentile(numbers, 0.9);
+      parameters.push(
+        { label: 'Total', value: formatNumber(total) },
+        { label: 'Average', value: formatNumber(avg) },
+        { label: 'Median', value: formatNumber(med) },
+        { label: 'Min / max', value: `${formatNumber(min)} / ${formatNumber(max)}` },
+        { label: 'Spread', value: formatNumber(spread) },
+      );
+      distribution = [
+        { label: 'Low', value: numbers.filter((value) => value <= percentile(numbers, 0.33)).length, share: 0 },
+        { label: 'Middle', value: numbers.filter((value) => value > percentile(numbers, 0.33) && value < percentile(numbers, 0.67)).length, share: 0 },
+        { label: 'High', value: numbers.filter((value) => value >= percentile(numbers, 0.67)).length, share: 0 },
+      ].map((item) => ({ ...item, share: round((item.value / Math.max(numbers.length, 1)) * 100) }));
+      summary = `${column.name} totals ${formatNumber(total)}, averages ${formatNumber(avg)}, and ranges from ${formatNumber(min)} to ${formatNumber(max)}.`;
+      recommendations.push(`Use ${column.name} for totals, averages, ranking, contribution, variance, and outlier analysis.`);
+      recommendations.push(`Review records at or above ${formatNumber(high)} because they sit near the top 10% of ${column.name}.`);
+    } else if (column.type === 'date') {
+      const timestamps = filled.map((value) => Date.parse(value)).filter(Number.isFinite);
+      const minDate = timestamps.length ? new Date(Math.min(...timestamps)).toISOString().slice(0, 10) : 'n/a';
+      const maxDate = timestamps.length ? new Date(Math.max(...timestamps)).toISOString().slice(0, 10) : 'n/a';
+      const months = new Set(filled.map(monthLabel).filter(Boolean)).size;
+      parameters.push(
+        { label: 'Earliest', value: minDate },
+        { label: 'Latest', value: maxDate },
+        { label: 'Months covered', value: formatNumber(months) },
+      );
+      const counts = new Map<string, number>();
+      for (const value of filled) {
+        const label = monthLabel(value) ?? 'Unparsed';
+        counts.set(label, (counts.get(label) ?? 0) + 1);
+      }
+      distribution = Array.from(counts.entries()).map(([label, count]) => ({ label, share: round((count / Math.max(filled.length, 1)) * 100), value: count })).slice(0, 8);
+      summary = `${column.name} covers ${minDate} to ${maxDate}, enabling weekly, monthly, aging, and seasonality analysis.`;
+      recommendations.push(`Use ${column.name} as the time axis for week-over-week and month-over-month analysis.`);
+    } else {
+      const counts = new Map<string, number>();
+      for (const value of filled) counts.set(value || 'Blank', (counts.get(value || 'Blank') ?? 0) + 1);
+      distribution = Array.from(counts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([label, count]) => ({ label, share: round((count / Math.max(filled.length, 1)) * 100), value: count }));
+      const top = distribution[0];
+      if (top) parameters.push({ label: 'Most common', value: `${top.label} (${top.share}%)` });
+      summary = top ? `${column.name} is led by ${top.label}, representing ${top.share}% of filled records.` : summary;
+      recommendations.push(`Use ${column.name} as a segment, filter, grouping, or comparison dimension.`);
+      if (column.unique > Math.max(rows.length * 0.8, 20)) recommendations.push(`${column.name} may behave like an identifier; avoid using it as a chart grouping unless needed for drill-down.`);
+    }
+
+    if (column.missing > 0) recommendations.push(`Improve capture for ${column.name}; ${formatNumber(column.missing)} records are missing values.`);
+
+    return {
+      completeness,
+      distribution,
+      name: column.name,
+      parameters,
+      recommendations: Array.from(new Set(recommendations)).slice(0, 4),
+      records: rows.length,
+      role,
+      summary,
+      type: column.type,
+      unique: column.unique,
+    };
+  });
+}
 function buildBusinessQuestions(rows: DataRow[], columns: ColumnProfile[]): UploadBusinessQuestion[] {
   const questions: UploadBusinessQuestion[] = [];
   const revenueColumn = findColumn(columns, ['revenue', 'sales', 'amount', 'order value', 'total', 'subtotal', 'premium', 'income'], 'number') ?? columns.find((column) => column.type === 'number');
@@ -1165,6 +1256,8 @@ export function analyzeRows(fileName: string, uploadedRows: UploadedRow[]): Uplo
   const filterViews = buildFilterViews(rows, columns);
   const advancedAnalytics = buildAdvancedAnalytics(rows, columns);
   const businessQuestions = buildBusinessQuestions(rows, columns);
+  const columnAnalyses = buildColumnAnalyses(rows, columns, roleInsights);
+  const analysisRows = sanitizeRowsForExport(rows, 1500);
 
   return {
     advancedAnalytics,
@@ -1172,6 +1265,8 @@ export function analyzeRows(fileName: string, uploadedRows: UploadedRow[]): Uplo
     filterViews,
     columnCount: columns.length,
     businessQuestions,
+    columnAnalyses,
+    analysisRows,
     columns,
     fileName,
     generatedAt: new Date().toISOString(),
@@ -1188,6 +1283,7 @@ export function analyzeRows(fileName: string, uploadedRows: UploadedRow[]): Uplo
 export function analyzeUpload(fileName: string, content: string, encoding = 'text'): UploadAnalysisResponse {
   return analyzeRows(fileName, parseRows(fileName, content, encoding));
 }
+
 
 
 

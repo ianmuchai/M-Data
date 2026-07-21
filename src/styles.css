@@ -3117,3 +3117,109 @@ body {
   font-weight: 760;
   line-height: 1.45;
 }
+
+.custom-analysis-studio,
+.column-analysis-panel {
+  display: grid;
+  gap: 16px;
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  border-radius: 8px;
+  padding: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(239, 246, 255, 0.72));
+}
+
+.custom-analysis-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.custom-analysis-controls label {
+  display: grid;
+  gap: 7px;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.custom-analysis-controls select {
+  min-height: 40px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+  font-weight: 750;
+}
+
+.custom-answer-card {
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(8, 189, 148, 0.18);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(240, 253, 250, 0.74);
+}
+
+.custom-answer-card strong {
+  color: #0f172a;
+  line-height: 1.42;
+}
+
+.custom-answer-card span {
+  color: #64748b;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.column-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.column-analysis-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07);
+}
+
+.column-analysis-card p {
+  margin: 0;
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.column-distribution {
+  display: grid;
+  gap: 8px;
+}
+
+.column-distribution div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.82rem;
+}
+
+.column-distribution b {
+  color: #0f172a;
+}
+
+.compact-recommendations {
+  gap: 8px;
+}
+
+.compact-recommendations .recommendation-item {
+  font-size: 0.84rem;
+  line-height: 1.42;
+}

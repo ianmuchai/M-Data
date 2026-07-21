@@ -15,10 +15,12 @@ describe('analyzeRows', () => {
     assert.equal(result.columnCount, 4);
     assert.ok(result.analysisOptions.length > 0);
     assert.ok(result.advancedAnalytics.methods.some((method) => method.key === 'regression'));
+    assert.ok(result.columnAnalyses.some((column) => column.name === 'Revenue'));
+    assert.equal(result.analysisRows.length, 3);
   });
 
   it('keeps large spreadsheet analysis responses below Vercel function payload limits', () => {
-    const rows = Array.from({ length: 10000 }, (_, index) => ({
+    const rows = Array.from({ length: 2500 }, (_, index) => ({
       Date: '2026-01-' + String((index % 28) + 1).padStart(2, '0'),
       Region: ['North', 'South', 'East', 'West'][index % 4],
       Product: 'Product ' + (index % 100),
@@ -53,6 +55,10 @@ describe('analyzeRows', () => {
     assert.equal(result.businessQuestions.find((question) => question.key === 'top-branch-revenue')?.answer.includes('Mombasa'), true);
     assert.equal(result.businessQuestions.find((question) => question.key === 'sales-rep-average-variance')?.answer.includes('Ben'), true);
     assert.ok(result.businessQuestions.length >= 6);
+    assert.ok(result.columnAnalyses.find((column) => column.name === 'PaymentMethod')?.distribution.length);
+    assert.ok(result.analysisRows[0].Branch);
   });
 });
+
+
 

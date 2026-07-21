@@ -197,6 +197,204 @@ function IntelligencePanel({ analysis }: { analysis: UploadAnalysisResponse }) {
   );
 }
 
+function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisResponse }) {
+  const numericColumns = analysis.columns.filter((column) => column.type === 'number');
+  const dimensionColumns = analysis.columns.filter((column) => column.type !== 'number');
+  const [metric, setMetric] = useState(numericColumns[0]?.name ?? analysis.columns[0]?.name ?? '');
+  const [dimension, setDimension] = useState(dimensionColumns[0]?.name ?? analysis.columns[0]?.name ?? '');
+  const [filterField, setFilterField] = useState('');
+  const [filterValue, setFilterValue] = useState('');
+  const [mode, setMode] = useState<'total' | 'average' | 'count' | 'variance' | 'share' | 'top-bottom'>('total');
+
+  const filterValues = useMemo(() => {
+    if (!filterField) return [];
+    return Array.from(new Set(analysis.analysisRows.map((row) => row[filterField]).filter(Boolean))).slice(0, 40);
+  }, [analysis.analysisRows, filterField]);
+
+  const result = useMemo(() => {
+    const rows = analysis.analysisRows.filter((row) => !filterField || !filterValue || row[filterField] === filterValue);
+    const groups = new Map<string, number[]>();
+    for (const row of rows) {
+      const key = row[dimension] || 'Blank';
+      const value = Number(String(row[metric] ?? '').replace(/[$,%\s]/g, ''));
+      const values = groups.get(key) ?? [];
+      if (Number.isFinite(value)) values.push(value);
+      else if (mode === 'count') values.push(1);
+      groups.set(key, values);
+    }
+
+    const table = Array.from(groups.entries()).map(([label, values]) => {
+      const total = values.reduce((sum, value) => sum + value, 0);
+      const average = values.length ? total / values.length : 0;
+      const min = values.length ? Math.min(...values) : 0;
+      const max = values.length ? Math.max(...values) : 0;
+      const spread = max - min;
+      return { average, count: values.length, label, max, min, spread, total };
+    }).filter((row) => row.count > 0);
+
+    const grandTotal = table.reduce((sum, row) => sum + row.total, 0);
+    const score = (row: (typeof table)[number]) => {
+      if (mode === 'average') return row.average;
+      if (mode === 'count') return row.count;
+      if (mode === 'variance') return row.spread;
+      if (mode === 'share') return grandTotal ? (row.total / grandTotal) * 100 : 0;
+      return row.total;
+    };
+    const sorted = table.sort((a, b) => score(b) - score(a)).slice(0, 12);
+    const top = sorted[0];
+    const bottom = sorted[sorted.length - 1];
+    const modeLabel = mode.replace('-', ' ');
+
+    return {
+      answer: top
+        ? `${top.label} leads by ${modeLabel} for ${metric} grouped by ${dimension}. ${bottom && bottom.label !== top.label ? `${bottom.label} is the lowest among the displayed groups.` : ''}`
+        : 'Choose a metric and dimension with enough matching data to generate a custom answer.',
+      rows: sorted.map((row) => ({
+        ...row,
+        share: grandTotal ? (row.total / grandTotal) * 100 : 0,
+        score: score(row),
+      })),
+    };
+  }, [analysis.analysisRows, dimension, filterField, filterValue, metric, mode]);
+
+  if (!analysis.analysisRows.length || !analysis.columns.length) return null;
+
+  return (
+    <div className="custom-analysis-studio">
+      <div className="panel-header compact">
+        <div>
+          <p className="eyebrow">Build your own analysis</p>
+          <h3>Choose any uploaded column, parameter, or business lens</h3>
+          <span>Use this when you do not want premade analytics. Pick the fields and BizDATA calculates the answer from your uploaded data.</span>
+        </div>
+        <span className="badge">{analysis.analysisRows.length.toLocaleString('en-US')} rows available</span>
+      </div>
+
+      <div className="custom-analysis-controls">
+        <label>
+          <span>Metric</span>
+          <select value={metric} onChange={(event) => setMetric(event.target.value)}>
+            {analysis.columns.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}
+          </select>
+        </label>
+        <label>
+          <span>Group by</span>
+          <select value={dimension} onChange={(event) => setDimension(event.target.value)}>
+            {analysis.columns.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}
+          </select>
+        </label>
+        <label>
+          <span>Analysis mode</span>
+          <select value={mode} onChange={(event) => setMode(event.target.value as typeof mode)}>
+            <option value="total">Total contribution</option>
+            <option value="average">Average value</option>
+            <option value="count">Record count</option>
+            <option value="variance">Variance and spread</option>
+            <option value="share">Share of total</option>
+            <option value="top-bottom">Top vs bottom</option>
+          </select>
+        </label>
+        <label>
+          <span>Filter field</span>
+          <select value={filterField} onChange={(event) => { setFilterField(event.target.value); setFilterValue(''); }}>
+            <option value="">No filter</option>
+            {analysis.columns.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}
+          </select>
+        </label>
+        <label>
+          <span>Filter value</span>
+          <select disabled={!filterField} value={filterValue} onChange={(event) => setFilterValue(event.target.value)}>
+            <option value="">All values</option>
+            {filterValues.map((value) => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </label>
+      </div>
+
+      <div className="custom-answer-card">
+        <strong>{result.answer}</strong>
+        <span>{filterField && filterValue ? `Filtered to ${filterField} = ${filterValue}` : 'Using all available uploaded rows in the analysis sample.'}</span>
+      </div>
+
+      <div className="analysis-table-card">
+        <div className="analysis-table-scroll">
+          <table className="analysis-table">
+            <thead>
+              <tr>
+                <th className="align-left">{dimension}</th>
+                <th>Total</th>
+                <th>Average</th>
+                <th>Count</th>
+                <th>Min</th>
+                <th>Max</th>
+                <th>Spread</th>
+                <th>Share</th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.rows.map((row) => (
+                <tr key={row.label}>
+                  <td>{row.label}</td>
+                  <td>{formatValue(row.total)}</td>
+                  <td>{formatValue(row.average)}</td>
+                  <td>{numberFormatter.format(row.count)}</td>
+                  <td>{formatValue(row.min)}</td>
+                  <td>{formatValue(row.max)}</td>
+                  <td>{formatValue(row.spread)}</td>
+                  <td>{row.share.toFixed(1)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ColumnAnalysisPanel({ analysis }: { analysis: UploadAnalysisResponse }) {
+  if (!analysis.columnAnalyses.length) return null;
+
+  return (
+    <div className="column-analysis-panel">
+      <div className="panel-header compact">
+        <div>
+          <p className="eyebrow">Every column explained</p>
+          <h3>Column-by-column parameters, distributions, and recommended uses</h3>
+        </div>
+        <span className="badge">{analysis.columnAnalyses.length} columns</span>
+      </div>
+      <div className="column-analysis-grid">
+        {analysis.columnAnalyses.map((column) => (
+          <article className="column-analysis-card" key={column.name}>
+            <div className="business-question-heading">
+              <strong>{column.name}</strong>
+              <span>{column.type}</span>
+            </div>
+            <p>{column.summary}</p>
+            <div className="question-evidence">
+              {column.parameters.map((parameter) => (
+                <span key={`${column.name}-${parameter.label}`}><b>{parameter.label}</b>{parameter.value}</span>
+              ))}
+            </div>
+            {column.distribution.length ? (
+              <div className="column-distribution">
+                {column.distribution.slice(0, 6).map((item) => (
+                  <div key={`${column.name}-${item.label}`}>
+                    <span>{item.label}</span>
+                    <b>{item.value.toLocaleString('en-US')} ({item.share}%)</b>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <div className="recommendation-list compact-recommendations">
+              {column.recommendations.map((recommendation) => <div className="recommendation-item" key={recommendation}>{recommendation}</div>)}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
 function BusinessQuestionsPanel({ analysis }: { analysis: UploadAnalysisResponse }) {
   if (analysis.businessQuestions.length === 0) return null;
 
@@ -491,6 +689,8 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
           </div>
           <IntelligencePanel analysis={analysis} />
           <BusinessQuestionsPanel analysis={analysis} />
+          <CustomAnalysisStudio analysis={analysis} />
+          <ColumnAnalysisPanel analysis={analysis} />
 
           {analysis.filterViews.length > 0 ? (
             <div className="analysis-workspace filter-workspace">
@@ -587,6 +787,7 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
     </section>
   );
 }
+
 
 
 
