@@ -1,20 +1,23 @@
 {
-  "short_name": "BizDATA",
-  "name": "BizDATA",
-  "start_url": "/",
-  "scope": "/",
-  "display": "standalone",
-  "background_color": "#f5f7fb",
-  "theme_color": "#07bd94",
-  "description": "A focused operating dashboard for analytics, segments, alerts, and performance trends.",
-  "icons": [
-    {
-      "src": "/bizyako-logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": ["business", "productivity"],
-  "orientation": "any"
+    "short_name":  "BizDATA",
+    "name":  "BizDATA",
+    "start_url":  "/",
+    "scope":  "/",
+    "display":  "standalone",
+    "background_color":  "#f5f7fb",
+    "theme_color":  "#07bd94",
+    "description":  "A focused operating dashboard for analytics, segments, alerts, and performance trends.",
+    "icons":  [
+                  {
+                      "src":  "/bizyako-logo.png",
+                      "sizes":  "633x464",
+                      "type":  "image/png",
+                      "purpose":  "any"
+                  }
+              ],
+    "categories":  [
+                       "business",
+                       "productivity"
+                   ],
+    "orientation":  "any"
 }

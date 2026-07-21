@@ -29,7 +29,7 @@ export function Topbar({
   return (
     <header className="topbar">
       <div className="brand-lockup" aria-label="BizDATA workspace">
-        <img className="brand-mark" src="/bizyako-logo.svg" alt="" aria-hidden="true" />
+        <img className="brand-mark" src="/bizyako-logo.png" alt="" aria-hidden="true" />
         <div>
           <p className="eyebrow">{companyName}</p>
         </div>
@@ -56,8 +56,9 @@ export function Topbar({
         </button>
       </div>
       <a className="bizyako-header-logo" href="https://bizyako.com" aria-label="BizYako" data-tooltip="BizYako">
-        <img src="/bizyako-logo.svg" alt="BizYako" />
+        <img src="/bizyako-logo.png" alt="BizYako" />
       </a>
     </header>
   );
 }
+
