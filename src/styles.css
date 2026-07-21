@@ -3009,3 +3009,111 @@ body {
     white-space: normal;
   }
 }
+
+.business-questions-panel {
+  display: grid;
+  gap: 16px;
+  border: 1px solid rgba(8, 189, 148, 0.16);
+  border-radius: 8px;
+  padding: 18px;
+  background: linear-gradient(135deg, rgba(240, 253, 250, 0.86), rgba(239, 246, 255, 0.78));
+}
+
+.business-question-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.business-question-card {
+  display: grid;
+  gap: 12px;
+  min-height: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+.business-question-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.business-question-heading strong {
+  color: #0f172a;
+  font-size: 0.98rem;
+  line-height: 1.35;
+}
+
+.business-question-heading span {
+  flex: 0 0 auto;
+  border: 1px solid rgba(8, 189, 148, 0.18);
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: rgba(240, 253, 250, 0.82);
+  color: #047857;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.business-question-card p {
+  margin: 0;
+  color: #334155;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.question-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.question-evidence span {
+  display: grid;
+  gap: 2px;
+  min-width: 96px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 0.82rem;
+}
+
+.question-evidence b {
+  color: #64748b;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.question-evidence small {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.question-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.question-fields span {
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.business-question-card em {
+  color: #0f766e;
+  font-size: 0.86rem;
+  font-style: normal;
+  font-weight: 760;
+  line-height: 1.45;
+}

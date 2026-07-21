@@ -5,6 +5,7 @@ import type {
   UploadAnalysisOption,
   UploadAnalysisResponse,
   UploadBusinessInsight,
+  UploadBusinessQuestion,
   UploadFieldStatistic,
   UploadFilterView,
   UploadSegmentBreakdown,
@@ -964,6 +965,162 @@ function buildFilterViews(rows: DataRow[], columns: ColumnProfile[]): UploadFilt
     .map((config) => createFilterView(config.key, config.title, config.description, config.matchedBy, config.rows, columns, config.recommendations))
     .filter((view): view is UploadFilterView => Boolean(view));
 }
+function findColumn(columns: ColumnProfile[], hints: string[], type?: ColumnProfile['type']) {
+  return columns.find((column) => (!type || column.type === type) && includesAny(column.name, hints));
+}
+
+function groupNumeric(rows: DataRow[], groupColumn: string, metricColumn: string) {
+  const groups = new Map<string, number[]>();
+  for (const row of rows) {
+    const group = row[groupColumn]?.trim() || 'Blank';
+    const rawValue = row[metricColumn] ?? '';
+    if (!isNumber(rawValue)) continue;
+    groups.set(group, [...(groups.get(group) ?? []), toNumber(rawValue)]);
+  }
+
+  return Array.from(groups.entries()).map(([label, values]) => {
+    const total = values.reduce((sum, value) => sum + value, 0);
+    const average = values.length ? total / values.length : 0;
+    const spread = values.length ? Math.max(...values) - Math.min(...values) : 0;
+    return { average, count: values.length, label, spread, total };
+  });
+}
+
+function monthLabel(dateValue: string) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+function weekLabel(dateValue: string) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return null;
+  const start = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const day = Math.floor((date.getTime() - start.getTime()) / 86400000);
+  return `${date.getUTCFullYear()} W${Math.floor(day / 7) + 1}`;
+}
+
+function groupTrend(rows: DataRow[], dateColumn: string, metricColumn: string, granularity: 'month' | 'week') {
+  const groups = new Map<string, number>();
+  for (const row of rows) {
+    const label = granularity === 'month' ? monthLabel(row[dateColumn] ?? '') : weekLabel(row[dateColumn] ?? '');
+    const rawValue = row[metricColumn] ?? '';
+    if (!label || !isNumber(rawValue)) continue;
+    groups.set(label, (groups.get(label) ?? 0) + toNumber(rawValue));
+  }
+
+  return Array.from(groups.entries()).map(([label, value]) => ({ label, value }));
+}
+
+function pctChange(first: number, last: number) {
+  if (!Number.isFinite(first) || first === 0) return null;
+  return round(((last - first) / Math.abs(first)) * 100);
+}
+
+function buildBusinessQuestions(rows: DataRow[], columns: ColumnProfile[]): UploadBusinessQuestion[] {
+  const questions: UploadBusinessQuestion[] = [];
+  const revenueColumn = findColumn(columns, ['revenue', 'sales', 'amount', 'order value', 'total', 'subtotal', 'premium', 'income'], 'number') ?? columns.find((column) => column.type === 'number');
+  const orderColumn = findColumn(columns, ['order size', 'order value', 'basket', 'cart', 'amount', 'revenue', 'sales', 'total'], 'number') ?? revenueColumn;
+  const branchColumn = findColumn(columns, ['branch', 'store', 'location', 'outlet', 'office'], 'text');
+  const repColumn = findColumn(columns, ['sales rep', 'salesrep', 'rep', 'agent', 'salesperson', 'account manager'], 'text');
+  const paymentColumn = findColumn(columns, ['payment', 'method', 'tender', 'channel'], 'text');
+  const dateColumn = findColumn(columns, ['date', 'order date', 'transaction date', 'created', 'month', 'week'], 'date');
+
+  if (branchColumn && revenueColumn) {
+    const groups = groupNumeric(rows, branchColumn.name, revenueColumn.name).sort((a, b) => b.total - a.total);
+    const top = groups[0];
+    const total = groups.reduce((sum, group) => sum + group.total, 0);
+    if (top) {
+      questions.push({
+        answer: `${top.label} generates the most ${revenueColumn.name}, with ${formatNumber(top.total)} across ${top.count} orders (${round((top.total / Math.max(total, 1)) * 100)}% of measured revenue).`,
+        confidence: 94,
+        evidence: groups.slice(0, 5).map((group) => ({ detail: `${group.count} orders`, label: group.label, value: formatNumber(group.total) })),
+        fields: [branchColumn.name, revenueColumn.name],
+        key: 'top-branch-revenue',
+        question: 'Which branch generates the most revenue?',
+        recommendation: `Use ${top.label} as the benchmark branch and compare staffing, product mix, and payment behavior against weaker branches.`,
+      });
+    }
+  }
+
+  if (repColumn && orderColumn) {
+    const groups = groupNumeric(rows, repColumn.name, orderColumn.name).filter((group) => group.count > 0);
+    const byAverage = [...groups].sort((a, b) => b.average - a.average);
+    const bySpread = [...groups].sort((a, b) => b.spread - a.spread);
+    const topAverage = byAverage[0];
+    const widest = bySpread[0];
+    if (topAverage && widest) {
+      questions.push({
+        answer: `${topAverage.label} has the highest average order at ${formatNumber(topAverage.average)}. ${widest.label} has the widest variation, with a spread of ${formatNumber(widest.spread)} between smallest and largest orders.`,
+        confidence: 92,
+        evidence: byAverage.slice(0, 5).map((group) => ({ detail: `spread ${formatNumber(group.spread)} from ${group.count} orders`, label: group.label, value: formatNumber(group.average) })),
+        fields: [repColumn.name, orderColumn.name],
+        key: 'sales-rep-average-variance',
+        question: 'What is the average order by sales rep, and who has the widest variance?',
+        recommendation: `Review ${widest.label}'s order mix for inconsistent deal size, discounting, or customer segmentation patterns.`,
+      });
+    }
+  }
+
+  if (paymentColumn && orderColumn) {
+    const groups = groupNumeric(rows, paymentColumn.name, orderColumn.name).filter((group) => group.count > 0).sort((a, b) => b.average - a.average);
+    const top = groups[0];
+    const bottom = groups[groups.length - 1];
+    if (top && bottom) {
+      questions.push({
+        answer: `${top.label} is associated with the largest average order size at ${formatNumber(top.average)}, while ${bottom.label} averages ${formatNumber(bottom.average)}. This is a segment relationship, not proof that payment method causes larger orders.`,
+        confidence: 88,
+        evidence: groups.slice(0, 5).map((group) => ({ detail: `${group.count} orders`, label: group.label, value: formatNumber(group.average) })),
+        fields: [paymentColumn.name, orderColumn.name],
+        key: 'payment-method-order-size',
+        question: 'How does payment method correlate with order size?',
+        recommendation: `Compare payment method with branch, customer type, and rep before changing payment incentives.`,
+      });
+    }
+  }
+
+  if (dateColumn && revenueColumn) {
+    const monthly = groupTrend(rows, dateColumn.name, revenueColumn.name, 'month');
+    const weekly = groupTrend(rows, dateColumn.name, revenueColumn.name, 'week');
+    const trend = monthly.length >= 2 ? monthly : weekly;
+    const granularity = monthly.length >= 2 ? 'month-over-month' : 'week-over-week';
+    const first = trend[0];
+    const last = trend[trend.length - 1];
+    const change = first && last ? pctChange(first.value, last.value) : null;
+    if (first && last && change != null) {
+      questions.push({
+        answer: `${granularity} ${revenueColumn.name} moved from ${formatNumber(first.value)} in ${first.label} to ${formatNumber(last.value)} in ${last.label}, a ${change >= 0 ? 'gain' : 'decline'} of ${Math.abs(change)}%.`,
+        confidence: 90,
+        evidence: trend.slice(-6).map((point) => ({ label: point.label, value: formatNumber(point.value) })),
+        fields: [dateColumn.name, revenueColumn.name],
+        key: 'sales-trend',
+        question: 'Is there a week-over-week or month-over-month sales trend?',
+        recommendation: change >= 0 ? 'Identify the branches, reps, and payment methods behind the lift so the pattern can be repeated.' : 'Investigate branch, rep, inventory, pricing, or campaign changes behind the decline.',
+      });
+    }
+  }
+
+  const numericColumns = columns.filter((column) => column.type === 'number').slice(0, 4);
+  for (const column of numericColumns) {
+    const values = getNumericValues(rows, column.name);
+    if (values.length < 3) continue;
+    const high = percentile(values, 0.9);
+    questions.push({
+      answer: `${values.filter((value) => value >= high).length} records sit in the top 10% of ${column.name}, starting around ${formatNumber(high)}.`,
+      confidence: 82,
+      evidence: [
+        { label: 'Top threshold', value: formatNumber(high) },
+        { label: 'Records reviewed', value: formatNumber(values.length) },
+      ],
+      fields: [column.name],
+      key: `top-decile-${slugPart(column.name)}`,
+      question: `Which ${column.name} records deserve priority review?`,
+      recommendation: `Inspect top ${column.name} records for exceptional revenue, risk, discounting, or operational follow-up.`,
+    });
+  }
+
+  return questions.slice(0, 10);
+}
 function buildRecommendations(columns: ColumnProfile[], signals: UploadSignal[]) {
   const recommendations = [
     'Validate source ownership, update frequency, and regulatory handling before production use.',
@@ -1007,12 +1164,14 @@ export function analyzeRows(fileName: string, uploadedRows: UploadedRow[]): Uplo
   const analysisOptions = buildAnalysisOptions(columns, rows);
   const filterViews = buildFilterViews(rows, columns);
   const advancedAnalytics = buildAdvancedAnalytics(rows, columns);
+  const businessQuestions = buildBusinessQuestions(rows, columns);
 
   return {
     advancedAnalytics,
     analysisOptions,
     filterViews,
     columnCount: columns.length,
+    businessQuestions,
     columns,
     fileName,
     generatedAt: new Date().toISOString(),
@@ -1029,5 +1188,7 @@ export function analyzeRows(fileName: string, uploadedRows: UploadedRow[]): Uplo
 export function analyzeUpload(fileName: string, content: string, encoding = 'text'): UploadAnalysisResponse {
   return analyzeRows(fileName, parseRows(fileName, content, encoding));
 }
+
+
 
 

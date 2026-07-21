@@ -33,4 +33,26 @@ describe('analyzeRows', () => {
     assert.ok(bytes < 4000000, 'Expected response below 4MB, got ' + bytes + ' bytes');
     assert.ok(result.filterViews.every((view) => view.rows.length <= 250));
   });
+
+  it('answers common sales business questions from branch, rep, payment, and date fields', () => {
+    const result = analyzeRows('sales-questions.xlsx', [
+      { Date: '2026-05-03', Branch: 'Nairobi', SalesRep: 'Asha', PaymentMethod: 'Card', Revenue: 1200, OrderSize: 1200 },
+      { Date: '2026-05-10', Branch: 'Nairobi', SalesRep: 'Asha', PaymentMethod: 'Cash', Revenue: 1800, OrderSize: 1800 },
+      { Date: '2026-06-07', Branch: 'Mombasa', SalesRep: 'Ben', PaymentMethod: 'Card', Revenue: 2800, OrderSize: 2800 },
+      { Date: '2026-06-14', Branch: 'Mombasa', SalesRep: 'Ben', PaymentMethod: 'Mobile Money', Revenue: 4000, OrderSize: 4000 },
+      { Date: '2026-07-05', Branch: 'Kisumu', SalesRep: 'Chao', PaymentMethod: 'Mobile Money', Revenue: 3200, OrderSize: 3200 },
+      { Date: '2026-07-12', Branch: 'Mombasa', SalesRep: 'Ben', PaymentMethod: 'Card', Revenue: 5200, OrderSize: 5200 },
+    ]);
+
+    const questions = result.businessQuestions.map((question) => question.question);
+
+    assert.ok(questions.includes('Which branch generates the most revenue?'));
+    assert.ok(questions.includes('What is the average order by sales rep, and who has the widest variance?'));
+    assert.ok(questions.includes('How does payment method correlate with order size?'));
+    assert.ok(questions.includes('Is there a week-over-week or month-over-month sales trend?'));
+    assert.equal(result.businessQuestions.find((question) => question.key === 'top-branch-revenue')?.answer.includes('Mombasa'), true);
+    assert.equal(result.businessQuestions.find((question) => question.key === 'sales-rep-average-variance')?.answer.includes('Ben'), true);
+    assert.ok(result.businessQuestions.length >= 6);
+  });
 });
+

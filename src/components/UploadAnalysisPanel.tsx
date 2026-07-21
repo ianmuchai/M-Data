@@ -197,6 +197,47 @@ function IntelligencePanel({ analysis }: { analysis: UploadAnalysisResponse }) {
   );
 }
 
+function BusinessQuestionsPanel({ analysis }: { analysis: UploadAnalysisResponse }) {
+  if (analysis.businessQuestions.length === 0) return null;
+
+  return (
+    <div className="business-questions-panel">
+      <div className="panel-header compact">
+        <div>
+          <p className="eyebrow">Business questions answered</p>
+          <h3>Direct answers from this dataset</h3>
+          <span>BizDATA detected the fields needed to answer practical sales, branch, rep, payment, and trend questions.</span>
+        </div>
+        <span className="badge">{analysis.businessQuestions.length} answers</span>
+      </div>
+
+      <div className="business-question-grid">
+        {analysis.businessQuestions.map((question) => (
+          <article className="business-question-card" key={question.key}>
+            <div className="business-question-heading">
+              <strong>{question.question}</strong>
+              <span>{question.confidence}% confidence</span>
+            </div>
+            <p>{question.answer}</p>
+            <div className="question-evidence" aria-label={`${question.question} evidence`}>
+              {question.evidence.slice(0, 5).map((item) => (
+                <span key={`${question.key}-${item.label}`}>
+                  <b>{item.label}</b>
+                  {item.value}
+                  {item.detail ? <small>{item.detail}</small> : null}
+                </span>
+              ))}
+            </div>
+            <div className="question-fields">
+              {question.fields.map((field) => <span key={`${question.key}-${field}`}>{field}</span>)}
+            </div>
+            <em>{question.recommendation}</em>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
 function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption }) {
   return (
     <div className="analysis-option-detail">
@@ -449,6 +490,7 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
             ))}
           </div>
           <IntelligencePanel analysis={analysis} />
+          <BusinessQuestionsPanel analysis={analysis} />
 
           {analysis.filterViews.length > 0 ? (
             <div className="analysis-workspace filter-workspace">
@@ -545,6 +587,7 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
     </section>
   );
 }
+
 
 
 

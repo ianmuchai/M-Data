@@ -155,6 +155,15 @@ export type UploadMarketSignal = {
   recommendedParameters: string[];
 };
 
+export type UploadBusinessQuestion = {
+  key: string;
+  question: string;
+  answer: string;
+  confidence: number;
+  fields: string[];
+  evidence: Array<{ label: string; value: string; detail?: string }>;
+  recommendation: string;
+};
 export type UploadLearningSummary = {
   datasetsSeen: number;
   learnedFields: number;
@@ -286,11 +295,13 @@ export type UploadAnalysisResponse = {
   roleInsights: UploadRoleInsight[];
   marketSignals: UploadMarketSignal[];
   learningSummary: UploadLearningSummary;
+  businessQuestions: UploadBusinessQuestion[];
   advancedAnalytics: AdvancedAnalyticsSummary;
   analysisOptions: UploadAnalysisOption[];
   filterViews: UploadFilterView[];
   recommendations: string[];
 };
+
 
 
 
