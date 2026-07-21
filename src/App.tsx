@@ -65,12 +65,6 @@ function App() {
         showInstall={pwaInstall.canInstall}
       />
 
-      {!pwaInstall.canInstall && !pwaInstall.isInstalled ? (
-        <section className="install-hint" aria-label="Install BizDATA">
-          <strong>Install BizDATA on your phone</strong>
-          <span>Open this site in your mobile browser menu and choose Add to Home Screen.</span>
-        </section>
-      ) : null}
 
       <WorkbenchNav activeSection={activeSection} hasUpload={Boolean(latestUpload)} onSectionChange={setActiveSection} />
 

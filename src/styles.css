@@ -2812,3 +2812,51 @@ body {
 .bizyako-header-logo img {
   object-fit: contain;
 }
+.app-download-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(8, 189, 148, 0.28);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #08bd94, #2563eb);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 12px 26px rgba(8, 189, 148, 0.18);
+}
+
+.app-download-button:hover {
+  transform: translateY(-1px);
+}
+
+.download-icon {
+  position: relative;
+  width: 18px;
+  height: 20px;
+  display: inline-block;
+}
+
+.download-icon::before {
+  position: absolute;
+  left: 8px;
+  top: 2px;
+  width: 2px;
+  height: 11px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+}
+
+.download-icon::after {
+  position: absolute;
+  left: 3px;
+  top: 8px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  content: "";
+  transform: rotate(45deg);
+}

@@ -43,11 +43,15 @@ export function Topbar({
         <button className="secondary-button" data-tooltip="Load the latest analytics" onClick={onRefresh} disabled={loading}>
           Refresh
         </button>
-        {showInstall ? (
-          <button className="install-button" data-tooltip="Add BizDATA to your device" onClick={onInstall}>
-            Install app
-          </button>
-        ) : null}
+        <button
+          aria-label="Download BizDATA for PC or mobile"
+          className="app-download-button"
+          data-tooltip="Download for PC or mobile"
+          onClick={showInstall ? onInstall : undefined}
+          type="button"
+        >
+          <span className="download-icon" aria-hidden="true" />
+        </button>
         <button className="secondary-button" data-tooltip="Download table data" onClick={onExportCsv} disabled={!canExport}>
           Export CSV
         </button>
