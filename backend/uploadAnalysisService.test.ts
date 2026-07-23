@@ -77,4 +77,52 @@ describe('analyzeRows', () => {
     assert.ok(questions.includes('Where is the business most concentrated?'));
     assert.ok(questions.some((question) => question.includes('data quality')));
   });
+  it('answers practical accounting questions about spend, receivables, variance, and review priorities', () => {
+    const result = analyzeRows('accounting-ledger.xlsx', [
+      { Date: '2026-01-05', Account: 'Office Supplies', CostCenter: 'Admin', Supplier: 'PaperCo', Expense: 1200, Budget: 1000, InvoiceAmount: 1200, Receivable: 0 },
+      { Date: '2026-02-05', Account: 'Office Supplies', CostCenter: 'Admin', Supplier: 'PaperCo', Expense: 1800, Budget: 1000, InvoiceAmount: 1800, Receivable: 0 },
+      { Date: '2026-03-05', Account: 'Fuel', CostCenter: 'Logistics', Supplier: 'FuelMax', Expense: 4200, Budget: 3000, InvoiceAmount: 4200, Receivable: 0 },
+      { Date: '2026-03-08', Account: 'Customer Balance', CostCenter: 'Sales', Supplier: 'Client A', Expense: 0, Budget: 0, InvoiceAmount: 0, Receivable: 7600 },
+      { Date: '2026-03-09', Account: 'Customer Balance', CostCenter: 'Sales', Supplier: 'Client B', Expense: 0, Budget: 0, InvoiceAmount: 0, Receivable: 2400 },
+    ]);
+
+    const questions = result.businessQuestions.map((question) => question.question);
+
+    assert.ok(questions.includes('Which accounting area is creating the biggest pressure?'));
+    assert.ok(questions.includes('Where is budget variance highest?'));
+    assert.ok(questions.includes('Which receivables or payables need collection or settlement focus?'));
+    assert.ok(result.businessQuestions.find((question) => question.key === 'accounting-pressure')?.answer.includes('Logistics'));
+  });
+
+  it('answers practical operations questions about stock, suppliers, delays, and bottlenecks', () => {
+    const result = analyzeRows('operations.xlsx', [
+      { Date: '2026-07-01', Product: 'Widget A', Supplier: 'Alpha', Warehouse: 'Nairobi', StockOnHand: 5, ReorderPoint: 20, UnitsSold: 80, LeadTimeDays: 12, DelayDays: 4 },
+      { Date: '2026-07-02', Product: 'Widget B', Supplier: 'Beta', Warehouse: 'Nairobi', StockOnHand: 50, ReorderPoint: 25, UnitsSold: 30, LeadTimeDays: 7, DelayDays: 1 },
+      { Date: '2026-07-03', Product: 'Widget C', Supplier: 'Alpha', Warehouse: 'Mombasa', StockOnHand: 8, ReorderPoint: 15, UnitsSold: 60, LeadTimeDays: 15, DelayDays: 6 },
+      { Date: '2026-07-04', Product: 'Widget D', Supplier: 'Gamma', Warehouse: 'Kisumu', StockOnHand: 120, ReorderPoint: 30, UnitsSold: 8, LeadTimeDays: 5, DelayDays: 0 },
+    ]);
+
+    const questions = result.businessQuestions.map((question) => question.question);
+
+    assert.ok(questions.includes('Which items need reorder attention first?'));
+    assert.ok(questions.includes('Which supplier, warehouse, route, or team is creating operational delay?'));
+    assert.ok(questions.includes('Which items may be overstocked or slow-moving?'));
+    assert.ok(result.businessQuestions.find((question) => question.key === 'operations-delay')?.answer.includes('Alpha'));
+  });
+
+  it('answers broad business research questions when the industry is not obvious', () => {
+    const result = analyzeRows('business-research.xlsx', [
+      { SurveyDate: '2026-04-01', Segment: 'Enterprise', Region: 'North', SatisfactionScore: 86, AdoptionRate: 0.72, ResponseCount: 120 },
+      { SurveyDate: '2026-04-02', Segment: 'SMB', Region: 'North', SatisfactionScore: 62, AdoptionRate: 0.38, ResponseCount: 80 },
+      { SurveyDate: '2026-05-01', Segment: 'Enterprise', Region: 'South', SatisfactionScore: 91, AdoptionRate: 0.81, ResponseCount: 140 },
+      { SurveyDate: '2026-05-02', Segment: 'SMB', Region: 'South', SatisfactionScore: 58, AdoptionRate: 0.35, ResponseCount: 70 },
+    ]);
+
+    const questions = result.businessQuestions.map((question) => question.question);
+
+    assert.ok(questions.includes('What is the strongest pattern in this dataset?'));
+    assert.ok(questions.includes('Which segment should management investigate first?'));
+    assert.ok(questions.includes('Which variables appear related enough for deeper analysis?'));
+    assert.ok(result.businessQuestions.length >= 8);
+  });
 });

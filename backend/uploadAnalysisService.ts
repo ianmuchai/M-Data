@@ -1108,6 +1108,35 @@ function buildColumnAnalyses(rows: DataRow[], columns: ColumnProfile[], roleInsi
     };
   });
 }
+function strongestNumericRelationship(rows: DataRow[], columns: ColumnProfile[]) {
+  const numericColumns = columns.filter((column) => column.type === 'number');
+  let best: { left: string; right: string; value: number } | null = null;
+
+  for (let leftIndex = 0; leftIndex < numericColumns.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < numericColumns.length; rightIndex += 1) {
+      const leftColumn = numericColumns[leftIndex];
+      const rightColumn = numericColumns[rightIndex];
+      const pairs = rows
+        .map((row) => ({ left: row[leftColumn.name] ?? '', right: row[rightColumn.name] ?? '' }))
+        .filter((pair) => isNumber(pair.left) && isNumber(pair.right))
+        .map((pair) => ({ left: toNumber(pair.left), right: toNumber(pair.right) }));
+      if (pairs.length < 3) continue;
+
+      const leftMean = pairs.reduce((sum, pair) => sum + pair.left, 0) / pairs.length;
+      const rightMean = pairs.reduce((sum, pair) => sum + pair.right, 0) / pairs.length;
+      const numerator = pairs.reduce((sum, pair) => sum + (pair.left - leftMean) * (pair.right - rightMean), 0);
+      const leftVariance = Math.sqrt(pairs.reduce((sum, pair) => sum + (pair.left - leftMean) ** 2, 0));
+      const rightVariance = Math.sqrt(pairs.reduce((sum, pair) => sum + (pair.right - rightMean) ** 2, 0));
+      const value = leftVariance && rightVariance ? numerator / (leftVariance * rightVariance) : 0;
+
+      if (!best || Math.abs(value) > Math.abs(best.value)) {
+        best = { left: leftColumn.name, right: rightColumn.name, value: round(value) };
+      }
+    }
+  }
+
+  return best;
+}
 function buildBusinessQuestions(rows: DataRow[], columns: ColumnProfile[]): UploadBusinessQuestion[] {
   const questions: UploadBusinessQuestion[] = [];
   const revenueColumn = findColumn(columns, ['revenue', 'sales', 'amount', 'order value', 'total', 'subtotal', 'premium', 'income'], 'number') ?? columns.find((column) => column.type === 'number');
@@ -1262,6 +1291,165 @@ function buildBusinessQuestions(rows: DataRow[], columns: ColumnProfile[]): Uplo
     }
   }
 
+  const expenseColumn = findColumn(columns, ['expense', 'spend', 'cost', 'payment', 'debit', 'charge'], 'number');
+  const budgetColumn = findColumn(columns, ['budget', 'planned', 'target', 'allocation'], 'number');
+  const receivableColumn = findColumn(columns, ['receivable', 'ar', 'customer balance', 'outstanding', 'invoice amount', 'invoice'], 'number');
+  const payableColumn = findColumn(columns, ['payable', 'ap', 'supplier balance', 'amount due', 'invoice amount', 'bill'], 'number');
+  const accountDimension = findColumn(columns, ['cost center', 'costcenter', 'department', 'division', 'branch'], 'text') ?? findColumn(columns, ['account', 'supplier', 'vendor'], 'text') ?? detectSegmentColumns(rows, columns)[0];
+
+  if (expenseColumn && accountDimension) {
+    const groups = groupNumeric(rows, accountDimension.name, expenseColumn.name).filter((group) => group.count > 0).sort((a, b) => b.total - a.total);
+    const top = groups[0];
+    const total = groups.reduce((sum, group) => sum + Math.abs(group.total), 0);
+    if (top && total > 0) {
+      questions.push({
+        answer: `${top.label} is creating the biggest accounting pressure, carrying ${formatNumber(top.total)} of ${expenseColumn.name} across ${top.count} records (${round((Math.abs(top.total) / total) * 100)}% of measured spend).`,
+        confidence: 91,
+        evidence: groups.slice(0, 5).map((group) => ({ detail: `${group.count} records`, label: group.label, value: formatNumber(group.total) })),
+        fields: [accountDimension.name, expenseColumn.name],
+        key: 'accounting-pressure',
+        question: 'Which accounting area is creating the biggest pressure?',
+        recommendation: `Review ${top.label} first for budget control, approval workflow, supplier terms, and unusual transactions.`,
+      });
+    }
+  }
+
+  if (expenseColumn && budgetColumn) {
+    const varianceRows = rows
+      .map((row, index) => {
+        const expenseRaw = row[expenseColumn.name] ?? '';
+        const budgetRaw = row[budgetColumn.name] ?? '';
+        if (!isNumber(expenseRaw) || !isNumber(budgetRaw)) return null;
+        const expense = toNumber(expenseRaw);
+        const budget = toNumber(budgetRaw);
+        const variance = expense - budget;
+        const label = accountDimension ? row[accountDimension.name] || `Record ${index + 1}` : `Record ${index + 1}`;
+        return { budget, expense, label, variance };
+      })
+      .filter((row): row is { budget: number; expense: number; label: string; variance: number } => row !== null && Math.abs(row.variance) > 0)
+      .sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance));
+    const top = varianceRows[0];
+    if (top) {
+      questions.push({
+        answer: `${top.label} has the highest budget variance: ${formatNumber(top.expense)} actual versus ${formatNumber(top.budget)} budget, a difference of ${formatNumber(top.variance)}.`,
+        confidence: 90,
+        evidence: varianceRows.slice(0, 5).map((row) => ({ detail: `actual ${formatNumber(row.expense)} / budget ${formatNumber(row.budget)}`, label: row.label, value: formatNumber(row.variance) })),
+        fields: [expenseColumn.name, budgetColumn.name, ...(accountDimension ? [accountDimension.name] : [])],
+        key: 'budget-variance',
+        question: 'Where is budget variance highest?',
+        recommendation: `Investigate whether ${top.label} is caused by timing, price change, volume increase, leakage, or poor budget assumptions.`,
+      });
+    }
+  }
+
+  const settlementColumn = receivableColumn ?? payableColumn;
+  const counterpartyColumn = findColumn(columns, ['customer', 'client', 'supplier', 'vendor', 'account', 'name'], 'text') ?? accountDimension;
+  if (settlementColumn && counterpartyColumn) {
+    const groups = groupNumeric(rows, counterpartyColumn.name, settlementColumn.name).filter((group) => group.total > 0).sort((a, b) => b.total - a.total);
+    const top = groups[0];
+    if (top) {
+      questions.push({
+        answer: `${top.label} needs the most collection or settlement focus, with ${formatNumber(top.total)} in ${settlementColumn.name}.`,
+        confidence: 87,
+        evidence: groups.slice(0, 5).map((group) => ({ detail: `${group.count} records`, label: group.label, value: formatNumber(group.total) })),
+        fields: [counterpartyColumn.name, settlementColumn.name],
+        key: 'receivable-payable-focus',
+        question: 'Which receivables or payables need collection or settlement focus?',
+        recommendation: `Prioritize ${top.label}, then check due dates, aging, dispute status, and approval history if those fields exist.`,
+      });
+    }
+  }
+
+  const delayColumn = findColumn(columns, ['delay', 'late', 'lead time', 'leadtime', 'cycle time', 'turnaround', 'days'], 'number');
+  const operationsDimension = findColumn(columns, ['supplier', 'warehouse', 'route', 'team', 'driver', 'branch', 'plant', 'line'], 'text');
+  if (delayColumn && operationsDimension) {
+    const groups = groupNumeric(rows, operationsDimension.name, delayColumn.name).filter((group) => group.count > 0).sort((a, b) => b.average - a.average);
+    const top = groups[0];
+    if (top) {
+      questions.push({
+        answer: `${top.label} is creating the largest operational delay, averaging ${formatNumber(top.average)} in ${delayColumn.name} across ${top.count} records.`,
+        confidence: 90,
+        evidence: groups.slice(0, 5).map((group) => ({ detail: `${group.count} records; spread ${formatNumber(group.spread)}`, label: group.label, value: formatNumber(group.average) })),
+        fields: [operationsDimension.name, delayColumn.name],
+        key: 'operations-delay',
+        question: 'Which supplier, warehouse, route, or team is creating operational delay?',
+        recommendation: `Review ${top.label} for capacity, dispatch, supplier SLA, staffing, approval, or handoff bottlenecks.`,
+      });
+    }
+  }
+
+  const salesUnitsColumn = findColumn(columns, ['units sold', 'sold', 'demand', 'sales quantity', 'quantity sold'], 'number');
+  if (stockColumn && salesUnitsColumn && productColumn) {
+    const overstockRows = rows
+      .map((row) => {
+        const stockRaw = row[stockColumn.name] ?? '';
+        const soldRaw = row[salesUnitsColumn.name] ?? '';
+        if (!isNumber(stockRaw) || !isNumber(soldRaw)) return null;
+        const stock = toNumber(stockRaw);
+        const sold = Math.max(toNumber(soldRaw), 1);
+        return { label: row[productColumn.name] || 'Unnamed item', ratio: stock / sold, sold, stock };
+      })
+      .filter((row): row is { label: string; ratio: number; sold: number; stock: number } => row !== null)
+      .sort((a, b) => b.ratio - a.ratio);
+    const top = overstockRows[0];
+    if (top) {
+      questions.push({
+        answer: `${top.label} may be overstocked or slow-moving: stock is ${formatNumber(top.stock)} against ${formatNumber(top.sold)} sold, a stock-to-sales ratio of ${round(top.ratio)}.`,
+        confidence: 84,
+        evidence: overstockRows.slice(0, 5).map((row) => ({ detail: `stock ${formatNumber(row.stock)} / sold ${formatNumber(row.sold)}`, label: row.label, value: `${round(row.ratio)}x` })),
+        fields: [productColumn.name, stockColumn.name, salesUnitsColumn.name],
+        key: 'overstock-slow-moving',
+        question: 'Which items may be overstocked or slow-moving?',
+        recommendation: `Check whether ${top.label} needs promotion, transfer, purchasing freeze, markdown, or demand review.`,
+      });
+    }
+  }
+
+  const segmentDimension = detectSegmentColumns(rows, columns)[0];
+  const researchMetric = columns.find((column) => column.type === 'number' && !includesAny(column.name, ['id', 'code', 'date', 'year', 'month'])) ?? concentrationMetric;
+  if (segmentDimension && researchMetric) {
+    const groups = groupNumeric(rows, segmentDimension.name, researchMetric.name).filter((group) => group.count > 0).sort((a, b) => b.average - a.average);
+    const top = groups[0];
+    const bottom = groups[groups.length - 1];
+    if (top) {
+      questions.push({
+        answer: `${top.label} is the strongest visible pattern: it leads ${researchMetric.name} by ${segmentDimension.name} with an average of ${formatNumber(top.average)}${bottom && bottom.label !== top.label ? ` versus ${formatNumber(bottom.average)} for ${bottom.label}` : ''}.`,
+        confidence: 83,
+        evidence: groups.slice(0, 5).map((group) => ({ detail: `${group.count} records`, label: group.label, value: formatNumber(group.average) })),
+        fields: [segmentDimension.name, researchMetric.name],
+        key: 'research-strongest-pattern',
+        question: 'What is the strongest pattern in this dataset?',
+        recommendation: `Use ${segmentDimension.name} as the first research lens, then compare against other metrics, dates, and segments.`,
+      });
+
+      const widest = [...groups].sort((a, b) => b.spread - a.spread)[0];
+      questions.push({
+        answer: `${widest.label} should be investigated first because it has the widest variation in ${researchMetric.name}, with a spread of ${formatNumber(widest.spread)}.`,
+        confidence: 81,
+        evidence: groups.slice(0, 5).map((group) => ({ detail: `spread ${formatNumber(group.spread)}`, label: group.label, value: formatNumber(group.average) })),
+        fields: [segmentDimension.name, researchMetric.name],
+        key: 'management-investigation-segment',
+        question: 'Which segment should management investigate first?',
+        recommendation: `Investigate the records behind ${widest.label} to separate normal mix differences from quality, pricing, service, operational, or customer behavior issues.`,
+      });
+    }
+  }
+
+  const relationship = strongestNumericRelationship(rows, columns);
+  if (relationship) {
+    questions.push({
+      answer: `${relationship.left} and ${relationship.right} have the strongest numeric relationship detected, with correlation ${relationship.value}. This suggests they should be compared further, but does not prove causation.`,
+      confidence: Math.abs(relationship.value) >= 0.7 ? 86 : 76,
+      evidence: [
+        { label: relationship.left, value: relationship.value.toString(), detail: `paired with ${relationship.right}` },
+        { label: 'Relationship strength', value: Math.abs(relationship.value) >= 0.7 ? 'Strong' : 'Moderate/weak' },
+      ],
+      fields: [relationship.left, relationship.right],
+      key: 'research-variable-relationship',
+      question: 'Which variables appear related enough for deeper analysis?',
+      recommendation: `Use correlation, regression, segmentation, and outlier checks on ${relationship.left} and ${relationship.right} before making decisions.`,
+    });
+  }
   const numericColumns = columns.filter((column) => column.type === 'number').slice(0, 4);
   for (const column of numericColumns) {
     const values = getNumericValues(rows, column.name);
