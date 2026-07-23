@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CategoryKey, RangeKey, UploadAnalysisResponse } from '../shared/analytics';
 import { BreakdownTable } from './components/BreakdownTable';
 import { ChartPanel } from './components/ChartPanel';
@@ -20,13 +20,15 @@ import { useAppConfig } from './hooks/useAppConfig';
 import { usePwaInstall } from './hooks/usePwaInstall';
 import { exportAnalytics } from './lib/exportReport';
 import { formatTimestamp, numberFormatter } from './lib/format';
-import { fallbackCategories, fallbackRanges } from './lib/options';
+import { fallbackCategories } from './lib/options';
 
 function App() {
   const [category, setCategory] = useState<CategoryKey>('source');
   const [range, setRange] = useState<RangeKey>('7d');
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [activeSection, setActiveSection] = useState<WorkbenchSection>('overview');
+  const [dashboardPulseKey, setDashboardPulseKey] = useState(0);
+  const dashboardImpactRef = useRef<HTMLDivElement | null>(null);
   const [latestUpload, setLatestUpload] = useState<UploadAnalysisResponse | null>(() => {
     try {
       const stored = window.localStorage.getItem('bizdata.latestUploadAnalysis');
@@ -65,6 +67,23 @@ function App() {
     }
   }, [latestUpload]);
 
+  const focusDashboardResults = () => {
+    setDashboardPulseKey((key) => key + 1);
+    window.setTimeout(() => {
+      dashboardImpactRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  };
+
+  const handleCategoryChange = (nextCategory: CategoryKey) => {
+    setCategory(nextCategory);
+    focusDashboardResults();
+  };
+
+  const handleRangeChange = (nextRange: RangeKey) => {
+    setRange(nextRange);
+    focusDashboardResults();
+  };
+
   const handleDashboardCsv = () => data && exportAnalytics(data, 'csv');
   const handleDashboardJson = () => data && exportAnalytics(data, 'json');
   const handleDashboardPdf = () => data && exportAnalytics(data, 'pdf');
@@ -87,7 +106,6 @@ function App() {
         showInstall={pwaInstall.canInstall}
       />
 
-
       <WorkbenchNav activeSection={activeSection} hasUpload={Boolean(latestUpload)} onSectionChange={setActiveSection} />
 
       {activeSection === 'overview' ? (
@@ -97,18 +115,19 @@ function App() {
             categories={data?.categories ?? fallbackCategories}
             category={category}
             range={range}
-            ranges={data?.ranges ?? fallbackRanges}
-            onCategoryChange={setCategory}
-            onRangeChange={setRange}
+            onCategoryChange={handleCategoryChange}
+            onRangeChange={handleRangeChange}
           />
-          <Overview summary={data?.summary} />
-          <MetricsGrid loading={loading} metrics={data?.metrics ?? []} />
-          <main className="main-grid">
-            <ChartPanel error={error} totalVolume={totalVolume} trend={data?.trend ?? []} onRetry={() => void refresh()} />
-            <SignalsPanel alerts={data?.alerts ?? []} averageConversion={averageConversion} insights={data?.insights ?? []} />
-          </main>
-          <DeepDivePanel category={category} details={data?.detailPoints ?? []} />
-          <BreakdownTable rows={data?.breakdown ?? []} />
+          <div className={`dashboard-impact-zone ${category}`} key={dashboardPulseKey} ref={dashboardImpactRef}>
+            <Overview summary={data?.summary} />
+            <MetricsGrid loading={loading} metrics={data?.metrics ?? []} />
+            <main className="main-grid">
+              <ChartPanel error={error} totalVolume={totalVolume} trend={data?.trend ?? []} onRetry={() => void refresh()} />
+              <SignalsPanel alerts={data?.alerts ?? []} averageConversion={averageConversion} insights={data?.insights ?? []} />
+            </main>
+            <DeepDivePanel category={category} details={data?.detailPoints ?? []} />
+            <BreakdownTable rows={data?.breakdown ?? []} />
+          </div>
         </div>
       ) : null}
 
@@ -128,5 +147,3 @@ function App() {
 }
 
 export default App;
-
-

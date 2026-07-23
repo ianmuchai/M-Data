@@ -252,7 +252,14 @@ export function DataAssistant({ analysis, enabled, onUploadRequest }: DataAssist
           {!analysis ? <button className="assistant-upload" onClick={onUploadRequest} type="button">Go to upload</button> : null}
         </section>
       ) : (
-        <button className="assistant-launcher" onClick={() => setOpen(true)} type="button">Ask BizDATA</button>
+                <button aria-label="Open BizDATA chat assistant" className="assistant-launcher" data-tooltip="Open BizDATA chat assistant" onClick={() => setOpen(true)} type="button">
+          <span className="assistant-launcher-icon" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+          <span className="visually-hidden">Open BizDATA chat assistant</span>
+        </button>
       )}
     </div>
   );

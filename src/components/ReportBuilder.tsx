@@ -145,6 +145,40 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
                   <tbody>{preview.rows.slice(0, 8).map((row) => <tr key={row.label}><td>{row.label}</td><td>{Object.values(row.cells).join(' | ')}</td></tr>)}</tbody>
                 </table>
               </div>
+            ) : config.visualType === 'line' || config.visualType === 'area' ? (
+              <div className={`story-chart vivid-story-chart ${config.visualType}`} aria-label="Story visual series">
+                <svg className="story-line-chart" viewBox="0 0 100 64" preserveAspectRatio="none" role="img" aria-label={`${config.visualType} chart preview`}>
+                  {config.visualType === 'area' && preview.series.length > 1 ? (
+                    <polygon
+                      className="story-area-fill"
+                      points={`0,64 ${preview.series.slice(0, 12).map((point, index, list) => {
+                        const x = list.length <= 1 ? 50 : (index / (list.length - 1)) * 100;
+                        const y = 58 - (point.value / maxSeries) * 50;
+                        return `${x},${Math.max(6, Math.min(58, y))}`;
+                      }).join(' ')} 100,64`}
+                    />
+                  ) : null}
+                  <polyline
+                    className="story-line-path"
+                    points={preview.series.slice(0, 12).map((point, index, list) => {
+                      const x = list.length <= 1 ? 50 : (index / (list.length - 1)) * 100;
+                      const y = 58 - (point.value / maxSeries) * 50;
+                      return `${x},${Math.max(6, Math.min(58, y))}`;
+                    }).join(' ')}
+                  />
+                  {preview.series.slice(0, 12).map((point, index, list) => {
+                    const x = list.length <= 1 ? 50 : (index / (list.length - 1)) * 100;
+                    const y = 58 - (point.value / maxSeries) * 50;
+                    return <circle className="story-line-dot" cx={x} cy={Math.max(6, Math.min(58, y))} key={point.name} r="1.7" />;
+                  })}
+                </svg>
+                <div className="story-line-labels">
+                  {preview.series.slice(0, 6).map((point) => (
+                    <span data-tooltip={`${point.name}: ${point.value.toLocaleString('en-US')}`} key={point.name}>{point.name}</span>
+                  ))}
+                </div>
+                {!preview.series.length ? <strong>No chart series available yet. Upload data or choose dashboard source.</strong> : null}
+              </div>
             ) : (
               <div className={`story-chart vivid-story-chart ${config.visualType}`} aria-label="Story visual series">
                 {preview.series.slice(0, 12).map((point, index) => (
