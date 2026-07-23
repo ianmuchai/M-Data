@@ -125,4 +125,21 @@ describe('analyzeRows', () => {
     assert.ok(questions.includes('Which variables appear related enough for deeper analysis?'));
     assert.ok(result.businessQuestions.length >= 8);
   });
+  it('uses pricing-specific business language for unit price priority review questions', () => {
+    const rows = Array.from({ length: 50 }, (_, index) => ({
+      Product: `Item ${index + 1}`,
+      Category: index % 2 ? 'Retail' : 'Wholesale',
+      Supplier: index % 3 ? 'Supplier A' : 'Supplier B',
+      'Unit Price (KES)': index < 43 ? 120 + index * 10 : 1020 + index * 15,
+      Quantity: 5 + (index % 9),
+    }));
+
+    const result = analyzeRows('unit-prices.xlsx', rows);
+    const question = result.businessQuestions.find((item) => item.key === 'top-decile-unit-price-kes');
+
+    assert.ok(question);
+    assert.ok(question.question.includes('Unit Price (KES)'));
+    assert.match(question.recommendation, /pricing|margin|supplier|procurement/i);
+    assert.doesNotMatch(question.recommendation, /exceptional revenue, risk, discounting, or operational follow-up/i);
+  });
 });

@@ -468,7 +468,62 @@ export function ColumnAnalysisPanel({ analysis }: { analysis: UploadAnalysisResp
     </div>
   );
 }
+function explainBusinessQuestion(question: UploadAnalysisResponse['businessQuestions'][number]) {
+  const text = `${question.question} ${question.answer} ${question.recommendation} ${question.fields.join(' ')}`.toLowerCase();
+  if (/unit price|price|pricing|supplier|procurement/.test(text)) {
+    return {
+      meaning: 'BizDATA is highlighting unusually high prices compared with the rest of the uploaded file.',
+      why: 'High unit prices can be normal for premium products, but they can also reveal pricing errors, supplier cost pressure, margin risk, or inconsistent purchasing.',
+      action: 'Open the matching records, compare product/category/supplier, and confirm whether the high price is expected before making pricing or procurement decisions.',
+    };
+  }
+  if (/reorder|stock|inventory|overstock|slow-moving/.test(text)) {
+    return {
+      meaning: 'This question is about inventory action: what needs replenishment, review, transfer, markdown, or purchasing control.',
+      why: 'Inventory fields can expose stockouts, excess stock, slow movement, warehouse imbalance, or reorder rules that do not match demand.',
+      action: 'Compare stock against reorder point, units sold, supplier, warehouse, and lead time before placing orders or freezing purchases.',
+    };
+  }
+  if (/budget|expense|cost|receivable|payable|accounting|invoice/.test(text)) {
+    return {
+      meaning: 'This question is about financial control, accounting pressure, cash movement, or settlement priority.',
+      why: 'Large values or variances can affect reporting accuracy, cash flow, approvals, and management accountability.',
+      action: 'Review the source records, owner, period, counterparty, approval status, and variance reason before reporting or escalation.',
+    };
+  }
+  if (/delay|lead time|route|warehouse|supplier|team|bottleneck/.test(text)) {
+    return {
+      meaning: 'This question is about operational bottlenecks and service performance.',
+      why: 'Delays and wide variation often point to capacity gaps, supplier SLA issues, handoff problems, route inefficiency, or staffing constraints.',
+      action: 'Compare the affected group against volume, dates, location, staff/team, supplier, and exception records to decide the first operational fix.',
+    };
+  }
+  if (/correlation|related|relationship|pattern|segment|investigate/.test(text)) {
+    return {
+      meaning: 'This question helps you understand patterns and relationships worth deeper analysis.',
+      why: 'Strong differences between segments or related variables can point to customer behavior, operational drivers, research hypotheses, or hidden risks.',
+      action: 'Use correlation, regression, ranking, and filters on the Analyze page to verify the pattern before treating it as a business cause.',
+    };
+  }
+  return {
+    meaning: 'BizDATA found a business-significant pattern in the uploaded data.',
+    why: 'The evidence values show why this item, segment, field, or period stands out from the rest of the file.',
+    action: 'Review the records behind the evidence, compare against related fields, and decide whether it is an opportunity, risk, data-quality issue, or operational action.',
+  };
+}
+
+function evidenceTooltip(label: string) {
+  const normalized = label.toLowerCase();
+  if (normalized.includes('threshold')) return 'The cut-off where BizDATA starts treating records as unusually high or important for review.';
+  if (normalized.includes('records')) return 'The number of rows BizDATA used to calculate this answer.';
+  if (normalized.includes('missing')) return 'Blank values that may reduce confidence in decisions or reports.';
+  if (normalized.includes('spread')) return 'The gap between the lowest and highest value; wider spread means less consistency.';
+  if (normalized.includes('average')) return 'The typical value for the selected group or field.';
+  return 'Evidence from the uploaded file that supports this business answer.';
+}
 function BusinessQuestionsPanel({ analysis }: { analysis: UploadAnalysisResponse }) {
+  const [openQuestionKey, setOpenQuestionKey] = useState<string | null>(analysis.businessQuestions[0]?.key ?? null);
+
   if (analysis.businessQuestions.length === 0) return null;
 
   return (
@@ -476,35 +531,57 @@ function BusinessQuestionsPanel({ analysis }: { analysis: UploadAnalysisResponse
       <div className="panel-header compact">
         <div>
           <p className="eyebrow">Business questions answered</p>
-          <h3>Direct answers from this dataset</h3>
-          <span>BizDATA detected the fields needed to answer practical sales, branch, rep, payment, and trend questions.</span>
+          <h3>Click any answer to understand what it means for the business</h3>
+          <span>BizDATA explains the finding, the evidence, the business implication, and the next action.</span>
         </div>
         <span className="badge">{analysis.businessQuestions.length} answers</span>
       </div>
 
-      <div className="business-question-grid">
-        {analysis.businessQuestions.map((question) => (
-          <article className="business-question-card" key={question.key}>
-            <div className="business-question-heading">
-              <strong>{question.question}</strong>
-              <span>{question.confidence}% confidence</span>
-            </div>
-            <p>{question.answer}</p>
-            <div className="question-evidence" aria-label={`${question.question} evidence`}>
-              {question.evidence.slice(0, 5).map((item) => (
-                <span key={`${question.key}-${item.label}`}>
-                  <b>{item.label}</b>
-                  {item.value}
-                  {item.detail ? <small>{item.detail}</small> : null}
-                </span>
-              ))}
-            </div>
-            <div className="question-fields">
-              {question.fields.map((field) => <span key={`${question.key}-${field}`}>{field}</span>)}
-            </div>
-            <em>{question.recommendation}</em>
-          </article>
-        ))}
+      <div className="business-question-grid clickable-question-grid">
+        {analysis.businessQuestions.map((question) => {
+          const isOpen = openQuestionKey === question.key;
+          const explanation = explainBusinessQuestion(question);
+          return (
+            <article className={`business-question-card clickable-question-card ${isOpen ? 'expanded' : ''}`} key={question.key}>
+              <button
+                aria-expanded={isOpen}
+                className="question-card-trigger"
+                onClick={() => setOpenQuestionKey(isOpen ? null : question.key)}
+                type="button"
+              >
+                <div className="business-question-heading">
+                  <strong>{question.question}</strong>
+                  <span>{question.confidence}% confidence</span>
+                </div>
+                <p>{question.answer}</p>
+              </button>
+
+              <div className="question-evidence" aria-label={`${question.question} evidence`}>
+                {question.evidence.slice(0, 5).map((item) => (
+                  <span data-tooltip={evidenceTooltip(item.label)} key={`${question.key}-${item.label}`}>
+                    <b>{item.label}</b>
+                    {item.value}
+                    {item.detail ? <small>{item.detail}</small> : null}
+                  </span>
+                ))}
+              </div>
+
+              <div className="question-fields">
+                {question.fields.map((field) => <span data-tooltip="Field from the uploaded dataset used in this answer" key={`${question.key}-${field}`}>{field}</span>)}
+              </div>
+
+              {isOpen ? (
+                <div className="question-explainer">
+                  <div><b>What it means</b><span>{explanation.meaning}</span></div>
+                  <div><b>Why it matters</b><span>{explanation.why}</span></div>
+                  <div><b>What to do next</b><span>{explanation.action}</span></div>
+                </div>
+              ) : null}
+
+              <em>{question.recommendation}</em>
+            </article>
+          );
+        })}
       </div>
     </div>
   );

@@ -1108,6 +1108,28 @@ function buildColumnAnalyses(rows: DataRow[], columns: ColumnProfile[], roleInsi
     };
   });
 }
+function priorityReviewRecommendation(columnName: string) {
+  const normalized = columnName.toLowerCase();
+  if (includesAny(normalized, ['unit price', 'price', 'rate', 'fee'])) {
+    return `Inspect top ${columnName} records for pricing accuracy, margin impact, supplier/procurement pressure, premium product mix, or unusual price exceptions.`;
+  }
+  if (includesAny(normalized, ['cost', 'expense', 'spend', 'payment'])) {
+    return `Inspect top ${columnName} records for budget pressure, approval control, supplier concentration, leakage, or avoidable spend.`;
+  }
+  if (includesAny(normalized, ['quantity', 'qty', 'unit', 'volume', 'sold'])) {
+    return `Inspect top ${columnName} records for demand spikes, capacity pressure, purchasing needs, stock movement, or fulfillment risk.`;
+  }
+  if (includesAny(normalized, ['stock', 'inventory', 'reorder', 'available'])) {
+    return `Inspect top ${columnName} records for overstock, understock, replenishment rules, warehouse balance, or slow-moving items.`;
+  }
+  if (includesAny(normalized, ['score', 'rate', 'ratio', 'percent', 'satisfaction', 'adoption'])) {
+    return `Inspect top ${columnName} records to understand what drives strong performance, unusual scores, segment differences, or research follow-up.`;
+  }
+  if (includesAny(normalized, ['revenue', 'sales', 'income', 'profit', 'amount', 'balance', 'receivable', 'payable'])) {
+    return `Inspect top ${columnName} records for financial concentration, collection or settlement priority, margin opportunity, or unusual transaction size.`;
+  }
+  return `Inspect top ${columnName} records to understand why they are unusually high and whether they represent opportunity, risk, data error, or operational action.`;
+}
 function strongestNumericRelationship(rows: DataRow[], columns: ColumnProfile[]) {
   const numericColumns = columns.filter((column) => column.type === 'number');
   let best: { left: string; right: string; value: number } | null = null;
@@ -1465,7 +1487,7 @@ function buildBusinessQuestions(rows: DataRow[], columns: ColumnProfile[]): Uplo
       fields: [column.name],
       key: `top-decile-${slugPart(column.name)}`,
       question: `Which ${column.name} records deserve priority review?`,
-      recommendation: `Inspect top ${column.name} records for exceptional revenue, risk, discounting, or operational follow-up.`,
+      recommendation: priorityReviewRecommendation(column.name),
     });
   }
 
