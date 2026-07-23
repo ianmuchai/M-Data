@@ -424,7 +424,76 @@ export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisRes
     </div>
   );
 }
+function distributionExplanation(column: UploadAnalysisResponse['columnAnalyses'][number]) {
+  const distribution = column.distribution;
+  const top = [...distribution].sort((a, b) => b.share - a.share)[0];
+  const lowest = [...distribution].sort((a, b) => a.share - b.share)[0];
+  const spread = top && lowest ? top.share - lowest.share : 0;
+  const isBalanced = distribution.length >= 3 && spread <= 12;
+  const isConcentrated = top ? top.share >= 50 || spread >= 28 : false;
+  const columnLabel = column.name;
+  const topLabel = top?.label ?? 'the largest band';
+
+  if (isBalanced) {
+    return {
+      headline: `${columnLabel} is evenly spread across the shown ranges.`,
+      verdict: 'Generally healthy, but it depends on the column.',
+      meaning: `The records are not heavily packed into one band. Low, typical, and high values all appear in similar proportions, so ${columnLabel} has a balanced spread rather than one dominant cluster.`,
+      businessImpact: `An even spread is usually good for comparison, segmentation, forecasting, and fair workload/performance analysis because the business is not relying on only one value range. For risk, price, cost, reorder, or delay fields, it still means each band deserves separate review because high values may carry different business consequences.`,
+      recommendation: `Compare the low, typical, and high ${columnLabel} bands by product, branch, supplier, customer, date, or department. If high values are costly, risky, delayed, or unusually expensive, create a priority review filter for the high band.`,
+    };
+  }
+
+  if (isConcentrated) {
+    return {
+      headline: `${columnLabel} is concentrated in ${topLabel}.`,
+      verdict: 'Needs business review.',
+      meaning: `${topLabel} contains the largest share of records, so this column is not evenly distributed. The business activity is clustered in one range.`,
+      businessImpact: `Concentration can be good when it reflects a deliberate strategy, standard pricing, consistent process control, or stable demand. It can be bad when it shows dependency, bottlenecks, high cost exposure, stock imbalance, risk concentration, or too many records sitting in an exception range.`,
+      recommendation: `Review why ${topLabel} dominates ${columnLabel}. Segment it by product, branch, supplier, customer, date, or team. If the concentrated band represents high cost, high price, high delay, low stock, or high risk, treat it as a management action queue.`,
+    };
+  }
+
+  return {
+    headline: `${columnLabel} has a mixed distribution across the shown ranges.`,
+    verdict: 'Useful for deeper segmentation.',
+    meaning: `The values are spread across multiple bands, but not perfectly evenly and not dominated by a single band. This usually means the column has meaningful variation for analysis.`,
+    businessImpact: `Mixed spread can reveal different customer/product/operation/accounting behaviors inside the same dataset. It is neither automatically good nor bad; the business meaning depends on whether high or low values represent success, risk, cost, delay, stock pressure, or opportunity.`,
+    recommendation: `Use this distribution as a starting point for filters and rankings. Compare each band against business dimensions like product, branch, supplier, customer, date, department, or region.`,
+  };
+}
+
+function downloadDistributionExplanation(column: UploadAnalysisResponse['columnAnalyses'][number]) {
+  const explanation = distributionExplanation(column);
+  const lines = [
+    `BizDATA distribution explanation: ${column.name}`,
+    '',
+    explanation.headline,
+    '',
+    `Verdict: ${explanation.verdict}`,
+    '',
+    `What it means: ${explanation.meaning}`,
+    '',
+    `Business impact: ${explanation.businessImpact}`,
+    '',
+    `Recommendation: ${explanation.recommendation}`,
+    '',
+    'Distribution:',
+    ...column.distribution.map((item) => `- ${item.label}: ${item.value.toLocaleString('en-US')} records (${item.share}%)`),
+  ];
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${column.name.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'column'}-distribution-explanation.txt`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 export function ColumnAnalysisPanel({ analysis }: { analysis: UploadAnalysisResponse }) {
+  const [selectedColumnName, setSelectedColumnName] = useState<string | null>(null);
+  const selectedColumn = analysis.columnAnalyses.find((column) => column.name === selectedColumnName) ?? null;
+  const selectedExplanation = selectedColumn ? distributionExplanation(selectedColumn) : null;
+
   if (!analysis.columnAnalyses.length) return null;
 
   return (
@@ -433,6 +502,7 @@ export function ColumnAnalysisPanel({ analysis }: { analysis: UploadAnalysisResp
         <div>
           <p className="eyebrow">Every column explained</p>
           <h3>Column-by-column parameters, distributions, and recommended uses</h3>
+          <span>Click a distribution to understand whether the spread or concentration is good, bad, or worth management review.</span>
         </div>
         <span className="badge">{analysis.columnAnalyses.length} columns</span>
       </div>
@@ -450,14 +520,19 @@ export function ColumnAnalysisPanel({ analysis }: { analysis: UploadAnalysisResp
               ))}
             </div>
             {column.distribution.length ? (
-              <div className="column-distribution">
+              <button
+                className="column-distribution clickable-distribution"
+                data-tooltip="Click to understand what this spread or concentration means for the business"
+                onClick={() => setSelectedColumnName(column.name)}
+                type="button"
+              >
                 {column.distribution.slice(0, 6).map((item) => (
                   <div key={`${column.name}-${item.label}`}>
                     <span>{item.label}</span>
                     <b>{item.value.toLocaleString('en-US')} ({item.share}%)</b>
                   </div>
                 ))}
-              </div>
+              </button>
             ) : null}
             <div className="recommendation-list compact-recommendations">
               {column.recommendations.map((recommendation) => <div className="recommendation-item" key={recommendation}>{recommendation}</div>)}
@@ -465,6 +540,48 @@ export function ColumnAnalysisPanel({ analysis }: { analysis: UploadAnalysisResp
           </article>
         ))}
       </div>
+
+      {selectedColumn && selectedExplanation ? (
+        <div className="distribution-modal-backdrop" role="presentation" onClick={() => setSelectedColumnName(null)}>
+          <section
+            aria-label={`${selectedColumn.name} distribution business explanation`}
+            aria-modal="true"
+            className="distribution-modal"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <div className="distribution-modal-header">
+              <div>
+                <p className="eyebrow">Distribution meaning</p>
+                <h3>{selectedExplanation.headline}</h3>
+                <span>{selectedExplanation.verdict}</span>
+              </div>
+              <button aria-label="Close distribution explanation" onClick={() => setSelectedColumnName(null)} type="button">Close</button>
+            </div>
+
+            <div className="distribution-modal-grid">
+              {selectedColumn.distribution.map((item) => (
+                <div className="distribution-modal-stat" key={`${selectedColumn.name}-${item.label}`}>
+                  <span>{item.label}</span>
+                  <strong>{item.value.toLocaleString('en-US')}</strong>
+                  <small>{item.share}% of records</small>
+                </div>
+              ))}
+            </div>
+
+            <div className="question-explainer distribution-explainer">
+              <div><b>What it means</b><span>{selectedExplanation.meaning}</span></div>
+              <div><b>Business impact</b><span>{selectedExplanation.businessImpact}</span></div>
+              <div><b>Recommendation</b><span>{selectedExplanation.recommendation}</span></div>
+            </div>
+
+            <div className="distribution-modal-actions">
+              <button className="secondary-button" onClick={() => downloadDistributionExplanation(selectedColumn)} type="button">Download explanation</button>
+              <button className="install-button" onClick={() => setSelectedColumnName(null)} type="button">Done</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

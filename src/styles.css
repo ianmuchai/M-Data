@@ -3633,3 +3633,130 @@ body {
     max-height: 240px;
   }
 }
+
+.clickable-distribution {
+  width: 100%;
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  cursor: pointer;
+  text-align: inherit;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.clickable-distribution:hover,
+.clickable-distribution:focus-visible {
+  border-color: rgba(0, 166, 166, 0.34);
+  box-shadow: 0 14px 34px rgba(0, 125, 125, 0.13);
+  transform: translateY(-1px);
+}
+
+.distribution-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.distribution-modal {
+  display: grid;
+  gap: 16px;
+  width: min(780px, 100%);
+  max-height: min(760px, calc(100vh - 44px));
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  padding: 20px;
+  background: linear-gradient(135deg, #ffffff, #ecfeff 52%, #fff7ed);
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.28);
+}
+
+.distribution-modal-header,
+.distribution-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.distribution-modal-header h3 {
+  margin-bottom: 4px;
+  font-size: 1.18rem;
+}
+
+.distribution-modal-header span {
+  color: #0f766e;
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.distribution-modal-header button {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.distribution-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.distribution-modal-stat {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.distribution-modal-stat span {
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.distribution-modal-stat strong {
+  color: #0f172a;
+  font-size: 1.42rem;
+}
+
+.distribution-modal-stat small {
+  color: #475569;
+  font-weight: 750;
+}
+
+.distribution-explainer {
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.distribution-modal-actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .distribution-modal-backdrop {
+    align-items: end;
+    padding: 10px;
+  }
+
+  .distribution-modal {
+    max-height: calc(100vh - 20px);
+    padding: 16px;
+  }
+
+  .distribution-modal-header,
+  .distribution-modal-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
