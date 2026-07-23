@@ -1,12 +1,13 @@
 import type { AnalyticsResponse, ReportBuilderConfig, UploadAnalysisResponse } from '../../shared/analytics';
 import { numberFormatter } from '../lib/format';
-import { downloadAnalysisWorkbook, downloadUploadAnalysisJson } from '../lib/uploadExports';
+import { downloadAnalysisWorkbook, downloadFilterViewPdf, downloadFilterViewWorkbook, downloadUploadAnalysisJson, downloadUploadAnalysisPdf } from '../lib/uploadExports';
 
 type ExportsHubProps = {
   dashboard: AnalyticsResponse | null;
   upload: UploadAnalysisResponse | null;
   onExportCsv: () => void;
   onExportJson: () => void;
+  onExportPdf: () => void;
 };
 
 function downloadJson(name: string, payload: unknown) {
@@ -19,7 +20,7 @@ function downloadJson(name: string, payload: unknown) {
   URL.revokeObjectURL(url);
 }
 
-export function ExportsHub({ dashboard, onExportCsv, onExportJson, upload }: ExportsHubProps) {
+export function ExportsHub({ dashboard, onExportCsv, onExportJson, onExportPdf, upload }: ExportsHubProps) {
   const reportConfig: ReportBuilderConfig = {
     chartType: 'bar',
     dimension: upload?.columns.find((column) => column.type !== 'number')?.name ?? 'name',
@@ -41,8 +42,11 @@ export function ExportsHub({ dashboard, onExportCsv, onExportJson, upload }: Exp
 
       <div className="export-grid">
         <article className="export-card premium">
-          <div><strong>Analyzed summary</strong><span>Download the latest uploaded dataset profile, methods, recommendations, and results as JSON.</span></div>
-          <button className="secondary-button" disabled={!upload} onClick={() => upload && downloadUploadAnalysisJson(upload)} type="button">Export JSON</button>
+          <div><strong>Analyzed summary</strong><span>Download the latest uploaded dataset profile, methods, recommendations, and results as JSON or PDF.</span></div>
+          <div className="download-actions compact-actions">
+            <button className="secondary-button" disabled={!upload} onClick={() => upload && downloadUploadAnalysisJson(upload)} type="button">Export JSON</button>
+            <button className="install-button" disabled={!upload} onClick={() => upload && downloadUploadAnalysisPdf(upload)} type="button">Export PDF</button>
+          </div>
         </article>
         <article className="export-card premium">
           <div><strong>Analysis workbook</strong><span>Download a compact Excel workbook with metrics, columns, methods, results, filtered views, and recommendations.</span></div>
@@ -53,8 +57,11 @@ export function ExportsHub({ dashboard, onExportCsv, onExportJson, upload }: Exp
           <button className="secondary-button" disabled={!dashboard} onClick={onExportCsv} type="button">Export CSV</button>
         </article>
         <article className="export-card premium">
-          <div><strong>Dashboard JSON</strong><span>Export metrics, trend, alerts, and breakdown data for integrations.</span></div>
-          <button className="secondary-button" disabled={!dashboard} onClick={onExportJson} type="button">Export JSON</button>
+          <div><strong>Dashboard JSON / PDF</strong><span>Export metrics, trend, alerts, and breakdown data for integrations or PDF reporting.</span></div>
+          <div className="download-actions compact-actions">
+            <button className="secondary-button" disabled={!dashboard} onClick={onExportJson} type="button">Export JSON</button>
+            <button className="install-button" disabled={!dashboard} onClick={onExportPdf} type="button">Export PDF</button>
+          </div>
         </article>
         <article className="export-card premium">
           <div><strong>Report setup</strong><span>Download the current starter report configuration as JSON.</span></div>
@@ -78,7 +85,10 @@ export function ExportsHub({ dashboard, onExportCsv, onExportJson, upload }: Exp
                   <strong>{view.title}</strong>
                   <span>{numberFormatter.format(view.rowCount)} rows | matched by {view.matchedBy}</span>
                 </div>
-                <small>Open Data to preview and download this focused Excel file.</small>
+                <div className="download-actions compact-actions">
+                  <button className="secondary-button" onClick={() => downloadFilterViewPdf(upload.fileName, view)} type="button">Export PDF</button>
+                  <button className="install-button" onClick={() => downloadFilterViewWorkbook(upload.fileName, view)} type="button">Export Excel</button>
+                </div>
               </article>
             ))}
           </div>

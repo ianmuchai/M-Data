@@ -67,6 +67,7 @@ function App() {
 
   const handleDashboardCsv = () => data && exportAnalytics(data, 'csv');
   const handleDashboardJson = () => data && exportAnalytics(data, 'json');
+  const handleDashboardPdf = () => data && exportAnalytics(data, 'pdf');
 
   return (
     <div className="app-shell modern-shell">
@@ -80,6 +81,7 @@ function App() {
         onAutoRefreshChange={setAutoRefresh}
         onExportCsv={handleDashboardCsv}
         onExportJson={handleDashboardJson}
+        onExportPdf={handleDashboardPdf}
         onInstall={() => void pwaInstall.install()}
         onRefresh={() => void refresh()}
         showInstall={pwaInstall.canInstall}
@@ -117,7 +119,7 @@ function App() {
       {activeSection === 'reports' ? <ReportBuilder dashboard={data ?? null} upload={latestUpload} /> : null}
 
       {activeSection === 'exports' ? (
-        <ExportsHub dashboard={data ?? null} upload={latestUpload} onExportCsv={handleDashboardCsv} onExportJson={handleDashboardJson} />
+        <ExportsHub dashboard={data ?? null} upload={latestUpload} onExportCsv={handleDashboardCsv} onExportJson={handleDashboardJson} onExportPdf={handleDashboardPdf} />
       ) : null}
 
       <DataAssistant analysis={latestUpload} enabled={appConfig.dataAssistantEnabled} onUploadRequest={() => setActiveSection('data')} />

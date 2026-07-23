@@ -1,27 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import * as XLSX from 'xlsx';
 import type { UploadAnalysisOption, UploadAnalysisResponse, UploadFilterView } from '../../shared/analytics';
 import { analyzeUploadedData } from '../api/uploadAnalysis';
 import { formatTimestamp, numberFormatter } from '../lib/format';
-import { downloadAnalysisWorkbook, downloadUploadAnalysisJson } from '../lib/uploadExports';
+import { downloadAnalysisWorkbook, downloadFilterViewPdf, downloadFilterViewWorkbook, downloadUploadAnalysisJson, downloadUploadAnalysisPdf } from '../lib/uploadExports';
 
 const acceptedTypes =
   '.csv,.tsv,.txt,.json,.xlsx,.xls,.xlsm,.xlsb,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.ms-excel.sheet.binary.macroEnabled.12';
 
 function formatValue(value: number) {
   return numberFormatter.format(Math.round(value));
-}
-
-function safeSheetName(value: string) {
-  return value.replace(/[\\/?*:[\]]/g, ' ').slice(0, 31) || 'Filtered data';
-}
-
-function downloadFilterWorkbook(fileName: string, filter: UploadFilterView) {
-  const worksheet = XLSX.utils.json_to_sheet(filter.rows);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, safeSheetName(filter.title));
-  const baseName = fileName.replace(/\.[^.]+$/, '') || 'uploaded-data';
-  XLSX.writeFile(workbook, `${baseName}-${filter.key}.xlsx`);
 }
 
 function FilterViewDetail({ fileName, filter }: { fileName: string; filter: UploadFilterView }) {
@@ -36,14 +23,24 @@ function FilterViewDetail({ fileName, filter }: { fileName: string; filter: Uplo
           <h3>{filter.title}</h3>
           <span>{filter.description}</span>
         </div>
-        <button
-          className="install-button"
-          data-tooltip="Download these filtered records as an Excel workbook"
-          onClick={() => downloadFilterWorkbook(fileName, filter)}
-          type="button"
-        >
-          Download Excel
-        </button>
+        <div className="download-actions compact-actions">
+          <button
+            className="secondary-button"
+            data-tooltip="Download these filtered records as a printable PDF report"
+            onClick={() => downloadFilterViewPdf(fileName, filter)}
+            type="button"
+          >
+            Download PDF
+          </button>
+          <button
+            className="install-button"
+            data-tooltip="Download these filtered records as an Excel workbook"
+            onClick={() => downloadFilterViewWorkbook(fileName, filter)}
+            type="button"
+          >
+            Download Excel
+          </button>
+        </div>
       </div>
 
       <div className="metrics-grid upload-metrics" aria-label={`${filter.title} filter metrics`}>
@@ -795,7 +792,11 @@ export function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption 
                 </div>
                 <div className="segment-driver-values">
                   <b>{formatValue(segment.total)}</b>
-                  <span>{segment.share}% share | avg {formatValue(segment.average)} | {numberFormatter.format(segment.records)} rows</span>
+                  <span
+                    data-tooltip={`${segment.share}% is this segment's share of total ${segment.metricField} across the analyzed rows. The average is ${segment.metricField} per matching row.`}
+                  >
+                    {segment.share}% of total {segment.metricField} | avg {segment.metricField}: {formatValue(segment.average)} | {numberFormatter.format(segment.records)} matching rows
+                  </span>
                 </div>
               </article>
             ))}

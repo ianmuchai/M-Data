@@ -1,3 +1,4 @@
+import { openPrintablePdfReport } from './printablePdf';
 import type {
   AdvancedAnalysisRow,
   AdvancedAnalysisSeriesPoint,
@@ -179,6 +180,24 @@ export function downloadPresentationOutline(deck: PresentationDeck) {
 
 function escapeHtml(value: string) {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+export function downloadPresentationPdf(deck: PresentationDeck) {
+  openPrintablePdfReport({
+    fileName: `${safeName(deck.title)}-presentation`,
+    generatedAt: new Date(deck.generatedAt).toLocaleString(),
+    subtitle: deck.subtitle,
+    title: deck.title,
+    sections: deck.slides.map((slide) => ({
+      title: slide.title,
+      body: `${slide.subtitle}. ${slide.narrative}`,
+      bullets: slide.bullets,
+      cards: slide.metrics.map((metric) => ({ label: metric.label, value: metric.value, detail: metric.delta })),
+      tables: slide.visualPoints.length
+        ? [{ title: `${slide.section} visual data`, columns: ['Name', 'Value'], rows: slide.visualPoints.map((point) => [point.name, point.value]) }]
+        : [],
+    })),
+  });
 }
 
 export function downloadPresentationHtml(deck: PresentationDeck) {

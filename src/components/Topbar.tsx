@@ -8,6 +8,7 @@ type TopbarProps = {
   onAutoRefreshChange: (enabled: boolean) => void;
   onExportCsv: () => void;
   onExportJson: () => void;
+  onExportPdf: () => void;
   onInstall: () => void;
   onRefresh: () => void;
   showInstall: boolean;
@@ -22,6 +23,7 @@ export function Topbar({
   onAutoRefreshChange,
   onExportCsv,
   onExportJson,
+  onExportPdf,
   onInstall,
   onRefresh,
   showInstall,
@@ -59,6 +61,9 @@ export function Topbar({
         <div className="topbar-action-group export-group" aria-label="Export actions">
           <button className="secondary-button" data-tooltip="Download table data" onClick={onExportCsv} disabled={!canExport}>
             Export CSV
+          </button>
+          <button className="secondary-button" data-tooltip="Download dashboard as PDF" onClick={onExportPdf} disabled={!canExport}>
+            Export PDF
           </button>
           <button className="cta-button" data-tooltip="Download full report" onClick={onExportJson} disabled={!canExport}>
             Export JSON

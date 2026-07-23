@@ -5,6 +5,7 @@ import {
   buildVisualStoryPreview,
   downloadPresentationHtml,
   downloadPresentationOutline,
+  downloadPresentationPdf,
   downloadStoryConfig,
 } from '../lib/storyBuilder';
 
@@ -68,6 +69,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
         <div className="download-actions">
           <button className="secondary-button" onClick={() => downloadStoryConfig(config)} type="button">Export config</button>
           <button className="secondary-button" onClick={() => downloadPresentationOutline(deck)} type="button">Export outline</button>
+          <button className="secondary-button" onClick={() => downloadPresentationPdf(deck)} type="button">Export PDF</button>
           <button className="install-button" onClick={() => downloadPresentationHtml(deck)} type="button">Export HTML</button>
         </div>
       </div>
