@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+﻿import { useState } from 'react';
 import type { Category, CategoryKey, RangeKey } from '../../shared/analytics';
 
 type DashboardControlsProps = {
@@ -10,9 +10,9 @@ type DashboardControlsProps = {
 };
 
 const categoryHelp: Record<CategoryKey, string> = {
-  source: 'Source compares how users or customers entered the business flow, such as organic, paid, referral, and direct demand.',
-  channel: 'Channel compares delivery or sales routes, such as web, retail, partner, field, or support channels.',
-  region: 'Region compares geography or operating markets so users can see where performance, demand, or risk differs.',
+  source: 'Shows performance by demand source, such as organic, paid, referral, and direct.',
+  channel: 'Shows performance by route to market or delivery channel.',
+  region: 'Shows performance by geography or operating market.',
 };
 
 function isoDate(daysAgo: number) {
@@ -31,12 +31,6 @@ function rangeFromDates(startDate: string, endDate: string): RangeKey {
   return '90d';
 }
 
-function rangeLabel(range: RangeKey) {
-  if (range === '7d') return '7-day analytics window';
-  if (range === '30d') return '30-day analytics window';
-  return '90-day analytics window';
-}
-
 export function DashboardControls({
   categories,
   category,
@@ -46,8 +40,6 @@ export function DashboardControls({
 }: DashboardControlsProps) {
   const [startDate, setStartDate] = useState(() => isoDate(6));
   const [endDate, setEndDate] = useState(() => isoDate(0));
-  const activeCategory = categories.find((item) => item.key === category) ?? categories[0];
-  const periodCopy = useMemo(() => rangeLabel(range), [range]);
 
   const updateDates = (nextStart: string, nextEnd: string) => {
     setStartDate(nextStart);
@@ -58,9 +50,8 @@ export function DashboardControls({
   return (
     <section className={`control-bar dashboard-filter-panel ${category}`} aria-label="Dashboard controls">
       <div className="filter-copy">
-        <p className="eyebrow">Dashboard focus</p>
-        <h3>{activeCategory?.label ?? 'Source'} view is active</h3>
-        <span>{categoryHelp[category]}</span>
+        <p className="eyebrow">View</p>
+        <strong>{category.toUpperCase()}</strong>
       </div>
 
       <div className="tabs dashboard-focus-tabs" role="tablist" aria-label="Analytics category">
@@ -74,24 +65,19 @@ export function DashboardControls({
             onClick={() => onCategoryChange(item.key)}
             type="button"
           >
-            <strong>{item.label}</strong>
-            <span>{item.key === 'source' ? 'Demand origin' : item.key === 'channel' ? 'Route to market' : 'Market location'}</span>
+            {item.label}
           </button>
         ))}
       </div>
 
       <div className="calendar-range-panel" aria-label="Custom period selector">
-        <div>
-          <p className="eyebrow">Period</p>
-          <strong>{periodCopy}</strong>
-          <span>Choose dates. BizDATA uses the closest supported analytics window while preserving your selected period on screen.</span>
-        </div>
+        <span className="range-badge">{range.toUpperCase()}</span>
         <label>
-          <span>Start date</span>
+          <span>From</span>
           <input max={endDate} type="date" value={startDate} onChange={(event) => updateDates(event.target.value, endDate)} />
         </label>
         <label>
-          <span>End date</span>
+          <span>To</span>
           <input min={startDate} type="date" value={endDate} onChange={(event) => updateDates(startDate, event.target.value)} />
         </label>
       </div>
