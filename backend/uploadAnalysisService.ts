@@ -25,7 +25,7 @@ const riskHints = ['risk', 'fraud', 'claim', 'default', 'loss', 'delinquent', 'o
 const identityHints = ['customer', 'client', 'account', 'policy', 'loan', 'transaction', 'email', 'phone'];
 const segmentHints = ['region', 'branch', 'channel', 'product', 'segment', 'country', 'city', 'department', 'category', 'market', 'team'];
 const unitHints = ['unit', 'units', 'quantity', 'qty', 'volume', 'sold'];
-const stockHints = ['stock', 'inventory', 'on hand', 'on_hand', 'available', 'qty', 'quantity'];
+const stockHints = ['stock', 'inventory', 'on hand', 'on_hand', 'available', 'qty', 'quantity', 'reorder', 'minimum stock', 'min stock', 'restock'];
 const categoryHints = ['category', 'department', 'segment', 'class', 'type', 'collection', 'division', 'family'];
 const nonCategoryHints = ['id', 'sku', 'code', 'number', 'email', 'phone', 'address', 'name', 'description', 'comment', 'note', 'reference', 'transaction'];
 
@@ -1170,6 +1170,77 @@ function buildBusinessQuestions(rows: DataRow[], columns: ColumnProfile[]): Uplo
     }
   }
 
+  const stockColumn = findColumn(columns, ['stock', 'stock on hand', 'inventory', 'on hand', 'available'], 'number');
+  const reorderColumn = findColumn(columns, ['reorder', 'reorder point', 'minimum stock', 'min stock', 'restock threshold'], 'number');
+  const productColumn = findColumn(columns, ['product', 'item', 'sku', 'material', 'name'], 'text');
+
+  if (stockColumn && reorderColumn) {
+    const reorderRows = rows
+      .map((row) => {
+        const stockRaw = row[stockColumn.name] ?? '';
+        const reorderRaw = row[reorderColumn.name] ?? '';
+        if (!isNumber(stockRaw) || !isNumber(reorderRaw)) return null;
+        const stock = toNumber(stockRaw);
+        const reorder = toNumber(reorderRaw);
+        return {
+          gap: reorder - stock,
+          label: productColumn ? row[productColumn.name] || 'Unnamed item' : row[stockColumn.name] || 'Item',
+          reorder,
+          stock,
+        };
+      })
+      .filter((row): row is { gap: number; label: string; reorder: number; stock: number } => row !== null && row.gap >= 0)
+      .sort((a, b) => b.gap - a.gap);
+
+    if (reorderRows.length > 0) {
+      const top = reorderRows[0];
+      questions.push({
+        answer: `${top.label} needs attention first: current stock is ${formatNumber(top.stock)} against a reorder point of ${formatNumber(top.reorder)}, leaving a shortfall of ${formatNumber(top.gap)}. ${formatNumber(reorderRows.length)} items are at or below reorder point.`,
+        confidence: 94,
+        evidence: reorderRows.slice(0, 5).map((row) => ({ detail: `stock ${formatNumber(row.stock)} / reorder point ${formatNumber(row.reorder)}`, label: row.label, value: `short ${formatNumber(row.gap)}` })),
+        fields: [stockColumn.name, reorderColumn.name, ...(productColumn ? [productColumn.name] : [])],
+        key: 'reorder-attention',
+        question: 'Which items need reorder attention first?',
+        recommendation: `Start with the largest stock shortfalls, then compare supplier, category, sales, and lead-time fields if they exist before placing orders.`,
+      });
+    }
+  }
+
+  const concentrationMetric = revenueColumn ?? columns.find((column) => column.type === 'number' && !includesAny(column.name, ['date', 'year', 'month']));
+  const concentrationDimension = detectSegmentColumns(rows, columns)[0];
+  if (concentrationMetric && concentrationDimension) {
+    const groups = groupNumeric(rows, concentrationDimension.name, concentrationMetric.name).filter((group) => group.count > 0).sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
+    const top = groups[0];
+    const total = groups.reduce((sum, group) => sum + Math.abs(group.total), 0);
+    if (top && total > 0) {
+      const share = round((Math.abs(top.total) / total) * 100);
+      questions.push({
+        answer: `${top.label} carries the largest concentration of ${concentrationMetric.name} under ${concentrationDimension.name}, representing ${share}% of the measured total.`,
+        confidence: 88,
+        evidence: groups.slice(0, 5).map((group) => ({ detail: `${group.count} records`, label: group.label, value: `${formatNumber(group.total)} (${round((Math.abs(group.total) / total) * 100)}%)` })),
+        fields: [concentrationDimension.name, concentrationMetric.name],
+        key: 'business-concentration',
+        question: 'Where is the business most concentrated?',
+        recommendation: share >= 50 ? `Review dependency on ${top.label}; a single group carries more than half of the measured activity.` : `Use ${top.label} as the first drill-down, then compare profitability, risk, quality, or service levels if those fields exist.`,
+      });
+    }
+  }
+
+  const missingCells = columns.reduce((sum, column) => sum + column.missing, 0);
+  const weakColumns = columns.filter((column) => column.missing > 0 || column.unique <= 1).slice(0, 4);
+  questions.push({
+    answer: weakColumns.length
+      ? `${formatNumber(missingCells)} blank cells or low-variation fields may affect decisions. Start with ${weakColumns.map((column) => column.name).join(', ')}.`
+      : `No major missing-value issue was detected across ${formatNumber(columns.length)} columns, so the file is ready for deeper analysis and filtering.`,
+    confidence: 86,
+    evidence: weakColumns.length
+      ? weakColumns.map((column) => ({ detail: `${formatNumber(column.unique)} unique values`, label: column.name, value: `${formatNumber(column.missing)} missing` }))
+      : [{ label: 'Columns checked', value: formatNumber(columns.length), detail: `${formatNumber(rows.length)} records` }],
+    fields: weakColumns.map((column) => column.name),
+    key: 'data-quality-readiness',
+    question: 'What data quality issues should be fixed before decisions?',
+    recommendation: weakColumns.length ? 'Clean missing or single-value fields before relying on dashboards, forecasts, or operational action lists.' : 'Proceed to segment, rank, trend, and model the data; keep validating source ownership and refresh frequency.',
+  });
   if (dateColumn && revenueColumn) {
     const monthly = groupTrend(rows, dateColumn.name, revenueColumn.name, 'month');
     const weekly = groupTrend(rows, dateColumn.name, revenueColumn.name, 'week');

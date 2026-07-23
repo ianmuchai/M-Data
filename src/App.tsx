@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CategoryKey, RangeKey, UploadAnalysisResponse } from '../shared/analytics';
 import { BreakdownTable } from './components/BreakdownTable';
 import { ChartPanel } from './components/ChartPanel';
@@ -26,7 +26,14 @@ function App() {
   const [range, setRange] = useState<RangeKey>('7d');
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [activeSection, setActiveSection] = useState<WorkbenchSection>('overview');
-  const [latestUpload, setLatestUpload] = useState<UploadAnalysisResponse | null>(null);
+  const [latestUpload, setLatestUpload] = useState<UploadAnalysisResponse | null>(() => {
+    try {
+      const stored = window.localStorage.getItem('bizdata.latestUploadAnalysis');
+      return stored ? (JSON.parse(stored) as UploadAnalysisResponse) : null;
+    } catch {
+      return null;
+    }
+  });
   const { data, error, loading, refresh } = useAnalytics(category, range, autoRefresh);
   const pwaInstall = usePwaInstall();
   const appConfig = useAppConfig();
@@ -44,6 +51,18 @@ function App() {
     () => numberFormatter.format(data?.trend.reduce((total, point) => total + point.value, 0) ?? 0),
     [data?.trend],
   );
+
+  useEffect(() => {
+    try {
+      if (latestUpload) {
+        window.localStorage.setItem('bizdata.latestUploadAnalysis', JSON.stringify(latestUpload));
+      } else {
+        window.localStorage.removeItem('bizdata.latestUploadAnalysis');
+      }
+    } catch {
+      // Browser storage can be unavailable in private mode; the in-memory workbook still stays active.
+    }
+  }, [latestUpload]);
 
   const handleDashboardCsv = () => data && exportAnalytics(data, 'csv');
   const handleDashboardJson = () => data && exportAnalytics(data, 'json');
@@ -90,7 +109,7 @@ function App() {
         </div>
       ) : null}
 
-      {activeSection === 'data' ? <UploadAnalysisPanel onAnalysisComplete={setLatestUpload} /> : null}
+      {activeSection === 'data' ? <UploadAnalysisPanel analysis={latestUpload} onAnalysisComplete={setLatestUpload} onAnalyzeRequest={() => setActiveSection('analyze')} /> : null}
 
       {activeSection === 'analyze' ? <AnalysisStudio analysis={latestUpload} onUploadRequest={() => setActiveSection('data')} /> : null}
 

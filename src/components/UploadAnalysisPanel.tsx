@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import type { UploadAnalysisOption, UploadAnalysisResponse, UploadFilterView } from '../../shared/analytics';
 import { analyzeUploadedData } from '../api/uploadAnalysis';
@@ -197,29 +197,61 @@ function IntelligencePanel({ analysis }: { analysis: UploadAnalysisResponse }) {
   );
 }
 
-function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisResponse }) {
+export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisResponse }) {
   const numericColumns = analysis.columns.filter((column) => column.type === 'number');
   const dimensionColumns = analysis.columns.filter((column) => column.type !== 'number');
-  const [metric, setMetric] = useState(numericColumns[0]?.name ?? analysis.columns[0]?.name ?? '');
+  const [metric, setMetric] = useState(numericColumns[0]?.name ?? '');
   const [dimension, setDimension] = useState(dimensionColumns[0]?.name ?? analysis.columns[0]?.name ?? '');
   const [filterField, setFilterField] = useState('');
   const [filterValue, setFilterValue] = useState('');
-  const [mode, setMode] = useState<'total' | 'average' | 'count' | 'variance' | 'share' | 'top-bottom'>('total');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [rankField, setRankField] = useState(numericColumns[0]?.name ?? '');
+  const [rankDirection, setRankDirection] = useState<'desc' | 'asc'>('desc');
+  const [mode, setMode] = useState<'total' | 'average' | 'count' | 'variance' | 'share' | 'top-bottom'>('average');
+
+  const metricProfile = analysis.columns.find((column) => column.name === metric);
+  const metricRole = analysis.columnAnalyses.find((column) => column.name === metric)?.role ?? '';
+  const isAdditiveMetric = Boolean(metricProfile && metricProfile.type === 'number' && !/reorder|point|threshold|score|rate|ratio|percent|percentage|age|rank|level/i.test(metricProfile.name + ' ' + metricRole));
+  const primaryValueLabel = isAdditiveMetric ? 'Total' : 'Typical value';
+
+  const filteredRows = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    const rows = analysis.analysisRows.filter((row) => {
+      const matchesFilter = !filterField || !filterValue || row[filterField] === filterValue;
+      const matchesSearch = !query || Object.values(row).some((value) => String(value).toLowerCase().includes(query));
+      return matchesFilter && matchesSearch;
+    });
+
+    if (!rankField) return rows;
+    return [...rows].sort((a, b) => {
+      const left = Number(String(a[rankField] ?? '').replace(/[$,%\s]/g, ''));
+      const right = Number(String(b[rankField] ?? '').replace(/[$,%\s]/g, ''));
+      const leftValue = Number.isFinite(left) ? left : Number.NEGATIVE_INFINITY;
+      const rightValue = Number.isFinite(right) ? right : Number.NEGATIVE_INFINITY;
+      return rankDirection === 'desc' ? rightValue - leftValue : leftValue - rightValue;
+    });
+  }, [analysis.analysisRows, filterField, filterValue, rankDirection, rankField, searchTerm]);
 
   const filterValues = useMemo(() => {
     if (!filterField) return [];
-    return Array.from(new Set(analysis.analysisRows.map((row) => row[filterField]).filter(Boolean))).slice(0, 40);
+    return Array.from(new Set(analysis.analysisRows.map((row) => row[filterField]).filter(Boolean))).slice(0, 80);
   }, [analysis.analysisRows, filterField]);
 
   const result = useMemo(() => {
-    const rows = analysis.analysisRows.filter((row) => !filterField || !filterValue || row[filterField] === filterValue);
+    if (!metric && mode !== 'count') {
+      return { answer: 'Choose a numeric metric to calculate averages, ranking, spread, and contribution.', rows: [] as Array<{ average: number; count: number; label: string; max: number; min: number; share: number; spread: number; total: number; displayedValue: number }> };
+    }
+
     const groups = new Map<string, number[]>();
-    for (const row of rows) {
+    for (const row of filteredRows) {
       const key = row[dimension] || 'Blank';
-      const value = Number(String(row[metric] ?? '').replace(/[$,%\s]/g, ''));
       const values = groups.get(key) ?? [];
-      if (Number.isFinite(value)) values.push(value);
-      else if (mode === 'count') values.push(1);
+      if (mode === 'count') {
+        values.push(1);
+      } else {
+        const value = Number(String(row[metric] ?? '').replace(/[$,%\s]/g, ''));
+        if (Number.isFinite(value)) values.push(value);
+      }
       groups.set(key, values);
     }
 
@@ -232,30 +264,31 @@ function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisResponse }
       return { average, count: values.length, label, max, min, spread, total };
     }).filter((row) => row.count > 0);
 
-    const grandTotal = table.reduce((sum, row) => sum + row.total, 0);
+    const grandTotal = table.reduce((sum, row) => sum + Math.abs(row.total), 0);
     const score = (row: (typeof table)[number]) => {
       if (mode === 'average') return row.average;
       if (mode === 'count') return row.count;
       if (mode === 'variance') return row.spread;
-      if (mode === 'share') return grandTotal ? (row.total / grandTotal) * 100 : 0;
-      return row.total;
+      if (mode === 'share') return grandTotal ? (Math.abs(row.total) / grandTotal) * 100 : 0;
+      if (mode === 'top-bottom') return row.max;
+      return isAdditiveMetric ? row.total : row.average;
     };
-    const sorted = table.sort((a, b) => score(b) - score(a)).slice(0, 12);
+    const sorted = table.sort((a, b) => score(b) - score(a)).slice(0, 25);
     const top = sorted[0];
     const bottom = sorted[sorted.length - 1];
-    const modeLabel = mode.replace('-', ' ');
+    const modeLabel = mode === 'total' && !isAdditiveMetric ? 'typical value' : mode.replace('-', ' ');
 
     return {
       answer: top
-        ? `${top.label} leads by ${modeLabel} for ${metric} grouped by ${dimension}. ${bottom && bottom.label !== top.label ? `${bottom.label} is the lowest among the displayed groups.` : ''}`
-        : 'Choose a metric and dimension with enough matching data to generate a custom answer.',
+        ? `${top.label} leads by ${modeLabel} for ${metric || 'records'} grouped by ${dimension}. ${bottom && bottom.label !== top.label ? `${bottom.label} is the lowest among the displayed groups.` : ''}`
+        : 'Choose fields with enough matching data to generate a custom answer.',
       rows: sorted.map((row) => ({
         ...row,
-        share: grandTotal ? (row.total / grandTotal) * 100 : 0,
-        score: score(row),
+        displayedValue: isAdditiveMetric || mode === 'count' ? row.total : row.average,
+        share: grandTotal ? (Math.abs(row.total) / grandTotal) * 100 : 0,
       })),
     };
-  }, [analysis.analysisRows, dimension, filterField, filterValue, metric, mode]);
+  }, [dimension, filteredRows, isAdditiveMetric, metric, mode]);
 
   if (!analysis.analysisRows.length || !analysis.columns.length) return null;
 
@@ -263,56 +296,73 @@ function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisResponse }
     <div className="custom-analysis-studio">
       <div className="panel-header compact">
         <div>
-          <p className="eyebrow">Build your own analysis</p>
-          <h3>Choose any uploaded column, parameter, or business lens</h3>
-          <span>Use this when you do not want premade analytics. Pick the fields and BizDATA calculates the answer from your uploaded data.</span>
+          <p className="eyebrow">Spreadsheet analysis builder</p>
+          <h3>Customize filters, rankings, groups, and calculated parameters</h3>
+          <span>Pick a business question yourself. BizDATA calculates from the active uploaded workbook and keeps the data available when you change pages.</span>
         </div>
-        <span className="badge">{analysis.analysisRows.length.toLocaleString('en-US')} rows available</span>
+        <span className="badge">{filteredRows.length.toLocaleString('en-US')} rows in view</span>
       </div>
 
-      <div className="custom-analysis-controls">
-        <label>
+      <div className="custom-analysis-controls spreadsheet-controls">
+        <label data-tooltip="A numeric field BizDATA will calculate, compare, or rank. Dates and text are used as groups or filters instead of being summed.">
           <span>Metric</span>
           <select value={metric} onChange={(event) => setMetric(event.target.value)}>
-            {analysis.columns.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}
+            {numericColumns.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}
           </select>
         </label>
-        <label>
+        <label data-tooltip="The column used to split the metric into rows, such as product, branch, category, customer, supplier, department, or month.">
           <span>Group by</span>
           <select value={dimension} onChange={(event) => setDimension(event.target.value)}>
             {analysis.columns.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}
           </select>
         </label>
-        <label>
+        <label data-tooltip="Average is best for reorder points, rates, scores, and thresholds. Total is best for revenue, sales, cost, quantity, or other additive values.">
           <span>Analysis mode</span>
           <select value={mode} onChange={(event) => setMode(event.target.value as typeof mode)}>
-            <option value="total">Total contribution</option>
-            <option value="average">Average value</option>
+            <option value="average">Average / actual typical value</option>
+            <option value="total">Total where meaningful</option>
             <option value="count">Record count</option>
             <option value="variance">Variance and spread</option>
             <option value="share">Share of total</option>
             <option value="top-bottom">Top vs bottom</option>
           </select>
         </label>
-        <label>
+        <label data-tooltip="Choose a column to narrow the workbook before calculating results.">
           <span>Filter field</span>
           <select value={filterField} onChange={(event) => { setFilterField(event.target.value); setFilterValue(''); }}>
             <option value="">No filter</option>
             {analysis.columns.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}
           </select>
         </label>
-        <label>
+        <label data-tooltip="Choose one value from the filter field, or keep all values.">
           <span>Filter value</span>
           <select disabled={!filterField} value={filterValue} onChange={(event) => setFilterValue(event.target.value)}>
             <option value="">All values</option>
             {filterValues.map((value) => <option key={value} value={value}>{value}</option>)}
           </select>
         </label>
+        <label data-tooltip="Search across the active workbook rows before ranking or grouping.">
+          <span>Search rows</span>
+          <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search any value" />
+        </label>
+        <label data-tooltip="Rank spreadsheet rows by a numeric field before previewing them.">
+          <span>Rank field</span>
+          <select value={rankField} onChange={(event) => setRankField(event.target.value)}>
+            {numericColumns.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}
+          </select>
+        </label>
+        <label data-tooltip="Descending shows highest values first. Ascending shows lowest values first.">
+          <span>Rank order</span>
+          <select value={rankDirection} onChange={(event) => setRankDirection(event.target.value as typeof rankDirection)}>
+            <option value="desc">Highest first</option>
+            <option value="asc">Lowest first</option>
+          </select>
+        </label>
       </div>
 
       <div className="custom-answer-card">
         <strong>{result.answer}</strong>
-        <span>{filterField && filterValue ? `Filtered to ${filterField} = ${filterValue}` : 'Using all available uploaded rows in the analysis sample.'}</span>
+        <span>{isAdditiveMetric ? `${metric} can be totaled because it behaves like an additive measure.` : `${metric} is treated as a threshold, score, rate, or position field, so BizDATA emphasizes average, min, max, and spread instead of pretending totals are always meaningful.`}</span>
       </div>
 
       <div className="analysis-table-card">
@@ -321,20 +371,20 @@ function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisResponse }
             <thead>
               <tr>
                 <th className="align-left">{dimension}</th>
-                <th>Total</th>
-                <th>Average</th>
-                <th>Count</th>
-                <th>Min</th>
-                <th>Max</th>
-                <th>Spread</th>
-                <th>Share</th>
+                <th data-tooltip={isAdditiveMetric ? 'Sum of the selected metric for this group.' : 'For non-additive fields such as reorder points, this shows the typical value instead of a misleading sum.'}>{primaryValueLabel}</th>
+                <th data-tooltip="Average value across records in this group. Best for reorder points, rates, scores, and thresholds.">Average</th>
+                <th data-tooltip="How many rows are included in this group after filters and search.">Count</th>
+                <th data-tooltip="Smallest value found in this group.">Min</th>
+                <th data-tooltip="Largest value found in this group.">Max</th>
+                <th data-tooltip="Difference between maximum and minimum. Wider spread means less consistency.">Spread</th>
+                <th data-tooltip="This group as a percentage of the absolute measured total.">Share</th>
               </tr>
             </thead>
             <tbody>
               {result.rows.map((row) => (
                 <tr key={row.label}>
                   <td>{row.label}</td>
-                  <td>{formatValue(row.total)}</td>
+                  <td>{formatValue(row.displayedValue)}</td>
                   <td>{formatValue(row.average)}</td>
                   <td>{numberFormatter.format(row.count)}</td>
                   <td>{formatValue(row.min)}</td>
@@ -347,11 +397,34 @@ function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisResponse }
           </table>
         </div>
       </div>
+
+      <div className="analysis-table-card spreadsheet-preview-card">
+        <div className="panel-header compact">
+          <div>
+            <p className="eyebrow">Spreadsheet preview</p>
+            <h3>Filtered and ranked workbook rows</h3>
+          </div>
+          <span className="badge">top {Math.min(filteredRows.length, 12)} rows</span>
+        </div>
+        <div className="analysis-table-scroll">
+          <table className="analysis-table compact-analysis-table">
+            <thead>
+              <tr>{analysis.columns.slice(0, 8).map((column) => <th className="align-left" key={column.name}>{column.name}</th>)}</tr>
+            </thead>
+            <tbody>
+              {filteredRows.slice(0, 12).map((row, index) => (
+                <tr key={`spreadsheet-${index}`}>
+                  {analysis.columns.slice(0, 8).map((column) => <td key={column.name}>{row[column.name] || '-'}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
-
-function ColumnAnalysisPanel({ analysis }: { analysis: UploadAnalysisResponse }) {
+export function ColumnAnalysisPanel({ analysis }: { analysis: UploadAnalysisResponse }) {
   if (!analysis.columnAnalyses.length) return null;
 
   return (
@@ -436,7 +509,7 @@ function BusinessQuestionsPanel({ analysis }: { analysis: UploadAnalysisResponse
     </div>
   );
 }
-function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption }) {
+export function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption }) {
   return (
     <div className="analysis-option-detail">
       <div className="analysis-option-copy">
@@ -553,9 +626,9 @@ function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption }) {
   );
 }
 
-export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete?: (analysis: UploadAnalysisResponse) => void }) {
+export function UploadAnalysisPanel({ analysis: providedAnalysis = null, onAnalysisComplete, onAnalyzeRequest }: { analysis?: UploadAnalysisResponse | null; onAnalysisComplete?: (analysis: UploadAnalysisResponse) => void; onAnalyzeRequest?: () => void }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [analysis, setAnalysis] = useState<UploadAnalysisResponse | null>(null);
+  const [analysis, setAnalysis] = useState<UploadAnalysisResponse | null>(providedAnalysis);
   const [selectedOptionKey, setSelectedOptionKey] = useState<string | null>(null);
   const [selectedFilterKey, setSelectedFilterKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -570,6 +643,10 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
     if (!analysis) return null;
     return analysis.filterViews.find((filter) => filter.key === selectedFilterKey) ?? analysis.filterViews[0] ?? null;
   }, [analysis, selectedFilterKey]);
+
+  useEffect(() => {
+    setAnalysis(providedAnalysis);
+  }, [providedAnalysis]);
 
   const handleFile = async (file?: File) => {
     if (!file) {
@@ -689,8 +766,15 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
           </div>
           <IntelligencePanel analysis={analysis} />
           <BusinessQuestionsPanel analysis={analysis} />
-          <CustomAnalysisStudio analysis={analysis} />
-          <ColumnAnalysisPanel analysis={analysis} />
+
+          <div className="analysis-transfer-card">
+            <div>
+              <p className="eyebrow">Analyze workspace ready</p>
+              <h3>Advanced analytics, spreadsheet ranking, and column-by-column analysis are now on the Analyze page</h3>
+              <span>Data stays here for business review, operational filters, quality checks, and workbook downloads. Your uploaded workbook remains active when you switch pages.</span>
+            </div>
+            <button className="install-button" onClick={onAnalyzeRequest} type="button">Open Analyze</button>
+          </div>
 
           {analysis.filterViews.length > 0 ? (
             <div className="analysis-workspace filter-workspace">
@@ -720,36 +804,6 @@ export function UploadAnalysisPanel({ onAnalysisComplete }: { onAnalysisComplete
               {selectedFilter ? <FilterViewDetail fileName={analysis.fileName} filter={selectedFilter} /> : null}
             </div>
           ) : null}
-
-          {analysis.analysisOptions.length > 0 ? (
-            <div className="analysis-workspace">
-              <div className="panel-header compact">
-                <div>
-                  <p className="eyebrow">Detected analysis paths</p>
-                  <h3>Click a business lens to see statistics, segment drivers, and optimization actions</h3>
-                </div>
-                <span className="badge">{analysis.analysisOptions.length} options</span>
-              </div>
-
-              <div className="analysis-option-grid" aria-label="Detected upload analysis options">
-                {analysis.analysisOptions.map((option) => (
-                  <button
-                    className={selectedOption?.key === option.key ? 'active' : undefined}
-                    data-tooltip={`Analyse ${option.title.toLowerCase()}`}
-                    key={option.key}
-                    onClick={() => setSelectedOptionKey(option.key)}
-                    type="button"
-                  >
-                    <strong>{option.title}</strong>
-                    <span>{option.fieldStats.length} measures | {option.segmentBreakdowns.length} segment cuts</span>
-                  </button>
-                ))}
-              </div>
-
-              {selectedOption ? <AnalysisOptionDetail option={selectedOption} /> : null}
-            </div>
-          ) : null}
-
           <div className="upload-two-column">
             <div className="alert-list">
               {analysis.signals.map((signal) => (

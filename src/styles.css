@@ -3223,3 +3223,130 @@ body {
   font-size: 0.84rem;
   line-height: 1.42;
 }
+
+.analysis-transfer-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid rgba(0, 166, 166, 0.18);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.94), rgba(255, 255, 255, 0.96) 56%, rgba(255, 247, 237, 0.92));
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.08);
+}
+
+.analysis-transfer-card h3,
+.analysis-transfer-card span {
+  display: block;
+  margin: 0;
+}
+
+.analysis-transfer-card span {
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.spreadsheet-controls {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.custom-analysis-controls input,
+.custom-analysis-controls select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #ffffff;
+  color: #111827;
+}
+
+.spreadsheet-preview-card {
+  border-color: rgba(0, 166, 166, 0.12);
+}
+
+.compact-analysis-paths .analysis-option-grid,
+.compact-option-grid {
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+  gap: 8px;
+}
+
+.compact-analysis-paths .analysis-option-grid button,
+.compact-option-grid button {
+  min-height: 58px;
+  padding: 10px 11px;
+  text-align: left;
+}
+
+.compact-analysis-paths .analysis-option-grid strong,
+.compact-option-grid strong {
+  font-size: 0.82rem;
+  line-height: 1.15;
+}
+
+.compact-analysis-paths .analysis-option-grid span,
+.compact-option-grid span {
+  font-size: 0.72rem;
+}
+
+.method-group-list {
+  gap: 10px;
+}
+
+.method-group {
+  display: grid;
+  gap: 8px;
+}
+
+.method-grid {
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 8px;
+}
+
+.method-grid button {
+  min-height: 56px;
+  padding: 9px 11px 9px 14px;
+  gap: 3px;
+  align-content: center;
+  text-align: left;
+}
+
+.method-grid strong {
+  font-size: 0.82rem;
+  line-height: 1.08;
+}
+
+.method-grid span {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.16;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.method-grid button::before {
+  width: 4px;
+}
+
+.analysis-table th[data-tooltip] {
+  cursor: help;
+  text-decoration: underline dotted rgba(37, 99, 235, 0.5);
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .analysis-transfer-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .method-grid,
+  .compact-analysis-paths .analysis-option-grid,
+  .compact-option-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

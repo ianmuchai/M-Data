@@ -58,7 +58,23 @@ describe('analyzeRows', () => {
     assert.ok(result.columnAnalyses.find((column) => column.name === 'PaymentMethod')?.distribution.length);
     assert.ok(result.analysisRows[0].Branch);
   });
+  it('keeps date columns out of numeric totals and asks practical inventory questions', () => {
+    const result = analyzeRows('inventory.xlsx', [
+      { Date: '2026-07-01', ProductName: 'Sugar 1kg', Category: 'Food', StockOnHand: 8, ReorderPoint: 15, UnitCost: 120, Supplier: 'Alpha' },
+      { Date: '2026-07-02', ProductName: 'Rice 2kg', Category: 'Food', StockOnHand: 40, ReorderPoint: 25, UnitCost: 220, Supplier: 'Beta' },
+      { Date: '2026-07-03', ProductName: 'Soap', Category: 'Home', StockOnHand: 5, ReorderPoint: 12, UnitCost: 95, Supplier: 'Alpha' },
+      { Date: '2026-07-04', ProductName: 'Tissue', Category: 'Home', StockOnHand: 18, ReorderPoint: 10, UnitCost: 80, Supplier: 'Gamma' },
+    ]);
+
+    const dateAnalysis = result.columnAnalyses.find((column) => column.name === 'Date');
+    const dateLabels = dateAnalysis?.parameters.map((parameter) => parameter.label) ?? [];
+    const questions = result.businessQuestions.map((question) => question.question);
+
+    assert.ok(dateLabels.includes('Earliest'));
+    assert.ok(dateLabels.includes('Latest'));
+    assert.equal(dateLabels.includes('Total'), false);
+    assert.ok(questions.includes('Which items need reorder attention first?'));
+    assert.ok(questions.includes('Where is the business most concentrated?'));
+    assert.ok(questions.some((question) => question.includes('data quality')));
+  });
 });
-
-
-

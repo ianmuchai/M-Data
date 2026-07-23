@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { AdvancedAnalysisMethodKey, AdvancedAnalysisResult, UploadAnalysisResponse } from '../../shared/analytics';
 import { numberFormatter } from '../lib/format';
+import { AnalysisOptionDetail, ColumnAnalysisPanel, CustomAnalysisStudio } from './UploadAnalysisPanel';
 
 type AnalysisStudioProps = {
   analysis: UploadAnalysisResponse | null;
@@ -61,14 +62,24 @@ function ResultSeries({ result }: { result: AdvancedAnalysisResult }) {
 export function AnalysisStudio({ analysis, onUploadRequest }: AnalysisStudioProps) {
   const firstEnabled = useMemo(() => analysis?.advancedAnalytics.methods.find((method) => method.enabled)?.key ?? null, [analysis]);
   const [selectedMethod, setSelectedMethod] = useState<AdvancedAnalysisMethodKey | null>(firstEnabled);
+  const [selectedOptionKey, setSelectedOptionKey] = useState<string | null>(analysis?.analysisOptions[0]?.key ?? null);
 
   useEffect(() => {
     setSelectedMethod(firstEnabled);
   }, [firstEnabled]);
 
+  useEffect(() => {
+    setSelectedOptionKey(analysis?.analysisOptions[0]?.key ?? null);
+  }, [analysis]);
+
   const selectedResult = useMemo(
     () => analysis?.advancedAnalytics.results.find((result) => result.method === selectedMethod) ?? null,
     [analysis, selectedMethod],
+  );
+
+  const selectedOption = useMemo(
+    () => analysis?.analysisOptions.find((option) => option.key === selectedOptionKey) ?? analysis?.analysisOptions[0] ?? null,
+    [analysis, selectedOptionKey],
   );
 
   if (!analysis) {
@@ -92,6 +103,38 @@ export function AnalysisStudio({ analysis, onUploadRequest }: AnalysisStudioProp
         <span className="badge">{numberFormatter.format(analysis.rowCount)} rows</span>
       </div>
 
+      <CustomAnalysisStudio analysis={analysis} />
+
+      <ColumnAnalysisPanel analysis={analysis} />
+
+      {analysis.analysisOptions.length > 0 ? (
+        <div className="analysis-workspace compact-analysis-paths">
+          <div className="panel-header compact">
+            <div>
+              <p className="eyebrow">Detected analysis paths</p>
+              <h3>Business lenses calculated from the uploaded workbook</h3>
+            </div>
+            <span className="badge">{analysis.analysisOptions.length} options</span>
+          </div>
+
+          <div className="analysis-option-grid compact-option-grid" aria-label="Detected upload analysis options">
+            {analysis.analysisOptions.map((option) => (
+              <button
+                className={selectedOption?.key === option.key ? 'active' : undefined}
+                data-tooltip={`Analyze ${option.title.toLowerCase()}`}
+                key={option.key}
+                onClick={() => setSelectedOptionKey(option.key)}
+                type="button"
+              >
+                <strong>{option.title}</strong>
+                <span>{option.fieldStats.length} measures</span>
+              </button>
+            ))}
+          </div>
+
+          {selectedOption ? <AnalysisOptionDetail option={selectedOption} /> : null}
+        </div>
+      ) : null}
       <div className="method-group-list" aria-label="Available analytical methods">
         {methodGroups.map((group) => (
           <section className={`method-group ${group.title.toLowerCase()}`} key={group.title}>
