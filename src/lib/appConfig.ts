@@ -3,6 +3,7 @@ export type AppConfig = {
   companyName: string;
   industry: string;
   supportEmail: string;
+  dataAssistantEnabled: boolean;
 };
 
 export const defaultAppConfig: AppConfig = {
@@ -10,5 +11,6 @@ export const defaultAppConfig: AppConfig = {
   companyName: 'BizDATA',
   industry: 'Financial services, insurance, and enterprise operations',
   supportEmail: 'support@example.com',
+  dataAssistantEnabled: true,
 };
 

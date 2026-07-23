@@ -4,6 +4,7 @@ import { BreakdownTable } from './components/BreakdownTable';
 import { ChartPanel } from './components/ChartPanel';
 import { CommandOverview } from './components/CommandOverview';
 import { DashboardControls } from './components/DashboardControls';
+import { DataAssistant } from './components/DataAssistant';
 import { DeepDivePanel } from './components/DeepDivePanel';
 import { ExportsHub } from './components/ExportsHub';
 import { MetricsGrid } from './components/MetricsGrid';
@@ -118,6 +119,8 @@ function App() {
       {activeSection === 'exports' ? (
         <ExportsHub dashboard={data ?? null} upload={latestUpload} onExportCsv={handleDashboardCsv} onExportJson={handleDashboardJson} />
       ) : null}
+
+      <DataAssistant analysis={latestUpload} enabled={appConfig.dataAssistantEnabled} onUploadRequest={() => setActiveSection('data')} />
     </div>
   );
 }

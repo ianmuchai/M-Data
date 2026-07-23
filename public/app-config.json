@@ -2,5 +2,6 @@
   "appName": "",
   "companyName": "BizDATA",
   "industry": "Financial services, insurance, and enterprise operations",
-  "supportEmail": "support@example.com"
+  "supportEmail": "support@example.com",
+  "dataAssistantEnabled": true
 }
