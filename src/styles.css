@@ -4142,3 +4142,82 @@ th button[data-tooltip]:focus-visible::before,
     padding: 10px;
   }
 }
+.business-question-card {
+  min-width: 0;
+  contain: layout paint;
+}
+
+.question-evidence {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.question-evidence span {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid rgba(15, 118, 110, 0.1);
+  padding: 8px 9px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.question-evidence b,
+.question-evidence small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.question-evidence span:not(:has(small)) {
+  align-content: start;
+}
+
+.question-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.question-fields span {
+  max-width: min(100%, 190px);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 999px;
+  padding: 5px 9px;
+  overflow: hidden;
+  background: rgba(239, 246, 255, 0.9);
+  color: #1d4ed8;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.question-explainer {
+  min-width: 0;
+}
+
+.question-explainer div {
+  min-width: 0;
+}
+
+.question-explainer span,
+.business-question-card em {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .question-evidence {
+    grid-template-columns: 1fr;
+  }
+
+  .question-fields span {
+    max-width: 100%;
+  }
+}
