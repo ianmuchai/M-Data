@@ -15,6 +15,32 @@ const methodGroups: Array<{ title: string; methods: AdvancedAnalysisMethodKey[] 
   { title: 'Compare', methods: ['segmentation', 'ranking'] },
   { title: 'Plan', methods: ['what-if'] },
 ];
+function AnalysisCommandCenter({ analysis }: { analysis: UploadAnalysisResponse }) {
+  const readyResults = analysis.advancedAnalytics.results.filter((result) => result.status === 'ready');
+  const topQuestion = analysis.businessQuestions[0];
+  const numericCount = analysis.columns.filter((column) => column.type === 'number').length;
+  const dimensionCount = analysis.columns.filter((column) => column.type !== 'number').length;
+
+  return (
+    <section className="analysis-command-center" aria-label="Analysis command center">
+      <article>
+        <span>Workbook</span>
+        <strong>{numberFormatter.format(analysis.rowCount)} rows</strong>
+        <p>{numberFormatter.format(numericCount)} measures and {numberFormatter.format(dimensionCount)} grouping/filter fields are available.</p>
+      </article>
+      <article>
+        <span>Ready Methods</span>
+        <strong>{numberFormatter.format(readyResults.length)}</strong>
+        <p>{readyResults.slice(0, 3).map((result) => result.title).join(', ') || 'Upload more complete fields to unlock methods.'}</p>
+      </article>
+      <article>
+        <span>Best Starting Question</span>
+        <strong>{topQuestion ? `${topQuestion.confidence}% confidence` : 'Not detected'}</strong>
+        <p>{topQuestion?.question ?? 'Use the custom analysis builder to ask a specific question.'}</p>
+      </article>
+    </section>
+  );
+}
 function ResultTable({ result }: { result: AdvancedAnalysisResult }) {
   const columns = Array.from(new Set(result.rows.flatMap((row) => Object.keys(row.cells)))).slice(0, 6);
   if (!result.rows.length || !columns.length) return null;
@@ -102,6 +128,8 @@ export function AnalysisStudio({ analysis, onUploadRequest }: AnalysisStudioProp
         </div>
         <span className="badge">{numberFormatter.format(analysis.rowCount)} rows</span>
       </div>
+
+      <AnalysisCommandCenter analysis={analysis} />
 
       <CustomAnalysisStudio analysis={analysis} />
 

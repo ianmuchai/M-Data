@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { AnalyticsResponse, PresentationPreset, UploadAnalysisResponse, VisualStoryConfig, VisualStoryType } from '../../shared/analytics';
 import {
   buildPresentationDeck,
@@ -24,6 +25,7 @@ const visualTypeOptions: Array<{ key: VisualStoryType; label: string; helper: st
   { key: 'table', label: 'Table - inspect exact records', helper: 'Best when users need details, evidence, or downloadable rows.' },
   { key: 'insights', label: 'Insights - key findings', helper: 'Best when the story is more narrative than numeric.' },
 ];
+
 const presetOptions: Array<{ key: PresentationPreset; label: string; helper: string }> = [
   { key: 'executive', label: 'Executive - decisions and summary', helper: 'Short, direct, focused on what changed and what to decide.' },
   { key: 'analyst', label: 'Analyst - evidence and details', helper: 'More metrics, assumptions, field behavior, and supporting evidence.' },
@@ -42,7 +44,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
     preset: 'executive',
     source: upload ? 'upload' : 'dashboard',
     theme: 'vibrant',
-    visualType: 'bar',
+    visualType: 'line',
   });
 
   const metricOptions = config.source === 'upload' && uploadMetricOptions.length ? uploadMetricOptions : ['value', 'revenue', 'conversion', 'users'];
@@ -50,7 +52,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
   const preview = useMemo(() => buildVisualStoryPreview({ config, dashboard, upload }), [config, dashboard, upload]);
   const deck = useMemo(() => buildPresentationDeck({ config, dashboard, upload }), [config, dashboard, upload]);
   const selectedSlide = deck.slides.find((slide) => slide.id === selectedSlideId) ?? deck.slides[0];
-  const maxSeries = Math.max(...preview.series.map((point) => point.value), 1);
+  const chartData = useMemo(() => preview.series.slice(0, 12).map((point) => ({ name: point.name, value: point.value, comparison: point.comparison ?? undefined })), [preview.series]);
   const selectedVisual = visualTypeOptions.find((option) => option.key === config.visualType) ?? visualTypeOptions[0];
   const selectedPreset = presetOptions.find((option) => option.key === config.preset) ?? presetOptions[0];
 
@@ -63,8 +65,8 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
       <div className="panel-header story-header">
         <div>
           <p className="eyebrow">Visual Story Builder</p>
-          <h3>Build visualizations and presentation-ready stories from your analyses</h3>
-          <span className="panel-subtitle">Choose a source, visual style, and audience. BizDATA prepares a live visual and a slide-style story you can export.</span>
+          <h3>Comprehensive presentation from all available analytics</h3>
+          <span className="panel-subtitle">BizDATA now combines dashboard metrics, uploaded workbook findings, business questions, model outputs, column quality, and recommendations into one downloadable story.</span>
         </div>
         <div className="download-actions">
           <button className="secondary-button" onClick={() => downloadStoryConfig(config)} type="button">Export config</button>
@@ -74,9 +76,9 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
         </div>
       </div>
 
-      <div className="story-builder-grid">
+      <div className="story-builder-grid comprehensive-story-grid">
         <aside className="builder-controls story-controls" aria-label="Visual story controls">
-          <div className="builder-helper"><strong>Shape the story</strong><span>Use dashboard data for executive reporting or upload data for dataset-specific presentations.</span></div>
+          <div className="builder-helper"><strong>Shape the story</strong><span>{selectedVisual.helper} {selectedPreset.helper}</span></div>
           <label>
             <span>Data source</span>
             <select value={config.source} onChange={(event) => update('source', event.target.value as VisualStoryConfig['source'])}>
@@ -113,7 +115,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
             <select value={config.narrativeStyle} onChange={(event) => update('narrativeStyle', event.target.value as VisualStoryConfig['narrativeStyle'])}>
               <option value="concise">Concise - short and direct</option>
               <option value="guided">Guided - explains the meaning</option>
-              <option value="detailed">Detailed - more evidence and context</option>
+              <option value="detailed">Detailed - evidence, risk, and next steps</option>
             </select>
           </label>
         </aside>
@@ -126,7 +128,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
                 <h3>{preview.title}</h3>
                 <span>{preview.subtitle}</span>
               </div>
-              <span className="badge">{config.theme}</span>
+              <span className="badge">{chartData.length} points</span>
             </div>
 
             {config.visualType === 'scorecards' ? (
@@ -142,64 +144,51 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
               <div className="analysis-table-scroll">
                 <table className="analysis-table compact-analysis-table">
                   <thead><tr><th className="align-left">Item</th><th>Details</th></tr></thead>
-                  <tbody>{preview.rows.slice(0, 8).map((row) => <tr key={row.label}><td>{row.label}</td><td>{Object.values(row.cells).join(' | ')}</td></tr>)}</tbody>
+                  <tbody>{preview.rows.slice(0, 10).map((row) => <tr key={row.label}><td>{row.label}</td><td>{Object.values(row.cells).join(' | ')}</td></tr>)}</tbody>
                 </table>
-              </div>
-            ) : config.visualType === 'line' || config.visualType === 'area' ? (
-              <div className={`story-chart vivid-story-chart ${config.visualType}`} aria-label="Story visual series">
-                <svg className="story-line-chart" viewBox="0 0 100 64" preserveAspectRatio="none" role="img" aria-label={`${config.visualType} chart preview`}>
-                  {config.visualType === 'area' && preview.series.length > 1 ? (
-                    <polygon
-                      className="story-area-fill"
-                      points={`0,64 ${preview.series.slice(0, 12).map((point, index, list) => {
-                        const x = list.length <= 1 ? 50 : (index / (list.length - 1)) * 100;
-                        const y = 58 - (point.value / maxSeries) * 50;
-                        return `${x},${Math.max(6, Math.min(58, y))}`;
-                      }).join(' ')} 100,64`}
-                    />
-                  ) : null}
-                  <polyline
-                    className="story-line-path"
-                    points={preview.series.slice(0, 12).map((point, index, list) => {
-                      const x = list.length <= 1 ? 50 : (index / (list.length - 1)) * 100;
-                      const y = 58 - (point.value / maxSeries) * 50;
-                      return `${x},${Math.max(6, Math.min(58, y))}`;
-                    }).join(' ')}
-                  />
-                  {preview.series.slice(0, 12).map((point, index, list) => {
-                    const x = list.length <= 1 ? 50 : (index / (list.length - 1)) * 100;
-                    const y = 58 - (point.value / maxSeries) * 50;
-                    return <circle className="story-line-dot" cx={x} cy={Math.max(6, Math.min(58, y))} key={point.name} r="1.7" />;
-                  })}
-                </svg>
-                <div className="story-line-labels">
-                  {preview.series.slice(0, 6).map((point) => (
-                    <span data-tooltip={`${point.name}: ${point.value.toLocaleString('en-US')}`} key={point.name}>{point.name}</span>
-                  ))}
-                </div>
-                {!preview.series.length ? <strong>No chart series available yet. Upload data or choose dashboard source.</strong> : null}
               </div>
             ) : (
               <div className={`story-chart vivid-story-chart ${config.visualType}`} aria-label="Story visual series">
-                {preview.series.slice(0, 12).map((point, index) => (
-                  <div className="story-chart-point" data-tooltip={`${point.name}: ${point.value.toLocaleString('en-US')}`} key={point.name}>
-                    <span
-                      className="story-chart-bar"
-                      style={{
-                        height: `${Math.max(14, (point.value / maxSeries) * 100)}%`,
-                        background: `linear-gradient(180deg, ${['#2563eb', '#00a6a6', '#f97316', '#7c3aed', '#e11d48', '#f59e0b'][index % 6]}, #0f172a)`,
-                      }}
-                    />
-                    <b>{point.value.toLocaleString('en-US')}</b>
-                    <small>{point.name}</small>
-                  </div>
-                ))}
+                <ResponsiveContainer width="100%" height={320}>
+                  {config.visualType === 'line' ? (
+                    <LineChart data={chartData} margin={{ bottom: 18, left: 4, right: 18, top: 18 }}>
+                      <CartesianGrid stroke="rgba(15, 23, 42, 0.08)" vertical={false} />
+                      <XAxis dataKey="name" interval={0} tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} />
+                      <YAxis tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} width={48} />
+                      <Tooltip formatter={(value) => Number(value).toLocaleString('en-US')} />
+                      <Line dataKey="value" dot={{ fill: '#f97316', r: 4, stroke: '#ffffff', strokeWidth: 2 }} stroke="#0f766e" strokeWidth={3} type="monotone" />
+                      <Line dataKey="comparison" dot={false} stroke="#94a3b8" strokeDasharray="5 5" strokeWidth={2} type="monotone" />
+                    </LineChart>
+                  ) : config.visualType === 'area' ? (
+                    <AreaChart data={chartData} margin={{ bottom: 18, left: 4, right: 18, top: 18 }}>
+                      <defs>
+                        <linearGradient id="storyArea" x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stopColor="#2563eb" stopOpacity={0.42} />
+                          <stop offset="100%" stopColor="#14b8a6" stopOpacity={0.08} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid stroke="rgba(15, 23, 42, 0.08)" vertical={false} />
+                      <XAxis dataKey="name" interval={0} tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} />
+                      <YAxis tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} width={48} />
+                      <Tooltip formatter={(value) => Number(value).toLocaleString('en-US')} />
+                      <Area dataKey="value" fill="url(#storyArea)" stroke="#2563eb" strokeWidth={3} type="monotone" />
+                    </AreaChart>
+                  ) : (
+                    <BarChart data={chartData} margin={{ bottom: 18, left: 4, right: 18, top: 18 }}>
+                      <CartesianGrid stroke="rgba(15, 23, 42, 0.08)" vertical={false} />
+                      <XAxis dataKey="name" interval={0} tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} />
+                      <YAxis tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} width={48} />
+                      <Tooltip formatter={(value) => Number(value).toLocaleString('en-US')} />
+                      <Bar dataKey="value" fill="#0f766e" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
                 {!preview.series.length ? <strong>No chart series available yet. Upload data or choose dashboard source.</strong> : null}
               </div>
             )}
 
             <div className="insight-card-grid">
-              {preview.insights.slice(0, 3).map((insight) => <article key={insight}><strong>Insight</strong><span>{insight}</span></article>)}
+              {preview.insights.slice(0, 4).map((insight) => <article key={insight}><strong>Insight</strong><span>{insight}</span></article>)}
             </div>
           </section>
 
@@ -236,7 +225,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
                 ))}
               </div>
               <div className="slide-bullets">
-                {selectedSlide.bullets.slice(0, 6).map((bullet) => <span key={bullet}>{bullet}</span>)}
+                {selectedSlide.bullets.slice(0, 8).map((bullet) => <span key={bullet}>{bullet}</span>)}
               </div>
             </article>
           </section>
@@ -245,4 +234,3 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
     </section>
   );
 }
-

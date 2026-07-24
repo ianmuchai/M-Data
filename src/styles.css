@@ -4221,3 +4221,98 @@ th button[data-tooltip]:focus-visible::before,
     max-width: 100%;
   }
 }
+.analysis-command-center {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.analysis-command-center article {
+  min-width: 0;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 8px;
+  padding: 14px;
+  background: linear-gradient(135deg, #ffffff, #ecfeff 52%, #eff6ff);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.07);
+}
+
+.analysis-command-center span {
+  display: block;
+  color: #0f766e;
+  font-size: 0.7rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.analysis-command-center strong {
+  display: block;
+  margin-top: 6px;
+  color: #0f172a;
+  font-size: 1.18rem;
+}
+
+.analysis-command-center p {
+  margin: 6px 0 0;
+  color: #475569;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.42;
+}
+
+.comprehensive-story-grid {
+  align-items: start;
+}
+
+.vivid-story-chart .recharts-wrapper,
+.vivid-story-chart .recharts-surface {
+  overflow: visible;
+}
+
+.vivid-story-chart {
+  min-height: 360px;
+  padding: 12px;
+}
+
+.visual-preview.line .vivid-story-chart,
+.visual-preview.area .vivid-story-chart {
+  display: block;
+  height: auto;
+}
+
+.recharts-tooltip-wrapper {
+  z-index: 50;
+}
+
+.presentation-builder .slide-tabs {
+  max-height: none;
+}
+
+.slide-preview {
+  background: linear-gradient(135deg, #ffffff, #f8fbff 56%, #ecfeff);
+}
+
+.slide-bullets span {
+  overflow-wrap: anywhere;
+}
+
+.assistant-panel {
+  max-height: min(760px, calc(100vh - 44px));
+}
+
+.assistant-messages {
+  max-height: 390px;
+}
+
+.assistant-message {
+  overflow-wrap: anywhere;
+}
+
+.assistant-message p {
+  white-space: pre-wrap;
+}
+
+@media (max-width: 900px) {
+  .analysis-command-center {
+    grid-template-columns: 1fr;
+  }
+}
