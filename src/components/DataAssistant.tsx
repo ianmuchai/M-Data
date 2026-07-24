@@ -24,6 +24,11 @@ function parseNumber(value: string | undefined) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function hasMeaningfulCell(value: unknown) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized !== '' && !['blank', 'null', 'undefined', 'n/a', 'na', 'none', '-', '--'].includes(normalized);
+}
+
 function formatNumber(value: number) {
   return numberFormatter.format(Math.round(value * 100) / 100);
 }

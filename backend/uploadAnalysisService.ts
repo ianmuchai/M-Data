@@ -35,6 +35,11 @@ function stringifyCell(value: unknown) {
   return String(value).trim();
 }
 
+function hasMeaningfulValue(value: unknown) {
+  const normalized = stringifyCell(value).toLowerCase();
+  return normalized !== '' && !['blank', 'null', 'undefined', 'n/a', 'na', 'none', '-', '--'].includes(normalized);
+}
+
 function parseDelimitedLine(line: string, delimiter: string) {
   const cells: string[] = [];
   let cell = '';
@@ -973,9 +978,11 @@ function findColumn(columns: ColumnProfile[], hints: string[], type?: ColumnProf
 function groupNumeric(rows: DataRow[], groupColumn: string, metricColumn: string) {
   const groups = new Map<string, number[]>();
   for (const row of rows) {
-    const group = row[groupColumn]?.trim() || 'Blank';
+    const rawGroup = row[groupColumn];
+    if (!hasMeaningfulValue(rawGroup)) continue;
+    const group = stringifyCell(rawGroup);
     const rawValue = row[metricColumn] ?? '';
-    if (!isNumber(rawValue)) continue;
+    if (!hasMeaningfulValue(rawValue) || !isNumber(rawValue)) continue;
     groups.set(group, [...(groups.get(group) ?? []), toNumber(rawValue)]);
   }
 

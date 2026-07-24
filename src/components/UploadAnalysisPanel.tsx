@@ -11,6 +11,11 @@ function formatValue(value: number) {
   return numberFormatter.format(Math.round(value));
 }
 
+function hasMeaningfulCell(value: unknown) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized !== '' && !['blank', 'null', 'undefined', 'n/a', 'na', 'none', '-', '--'].includes(normalized);
+}
+
 type CollapsibleTableCardProps = {
   eyebrow?: string;
   title: string;
@@ -271,7 +276,7 @@ export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisRes
 
   const filterValues = useMemo(() => {
     if (!filterField) return [];
-    return Array.from(new Set(analysis.analysisRows.map((row) => row[filterField]).filter(Boolean))).slice(0, 80);
+    return Array.from(new Set(analysis.analysisRows.map((row) => row[filterField]).filter(hasMeaningfulCell))).slice(0, 80);
   }, [analysis.analysisRows, filterField]);
 
   const result = useMemo(() => {

@@ -125,6 +125,20 @@ describe('analyzeRows', () => {
     assert.ok(questions.includes('Which variables appear related enough for deeper analysis?'));
     assert.ok(result.businessQuestions.length >= 8);
   });
+  it('does not treat blank group cells as measurable ranking parameters', () => {
+    const result = analyzeRows('blank-branches.xlsx', [
+      { Branch: '', Revenue: 999999, SalesRep: '', OrderSize: 999999 },
+      { Branch: 'Nairobi', Revenue: 1200, SalesRep: 'Asha', OrderSize: 1200 },
+      { Branch: 'Mombasa', Revenue: 2500, SalesRep: 'Ben', OrderSize: 2500 },
+      { Branch: 'Mombasa', Revenue: 2700, SalesRep: 'Ben', OrderSize: 2700 },
+      { Branch: 'N/A', Revenue: 888888, SalesRep: 'N/A', OrderSize: 888888 },
+    ]);
+
+    const branchQuestion = result.businessQuestions.find((question) => question.key === 'top-branch-revenue');
+    assert.ok(branchQuestion);
+    assert.match(branchQuestion.answer, /Mombasa/);
+    assert.doesNotMatch(branchQuestion.answer, /Blank|N\/A/i);
+  });
   it('uses pricing-specific business language for unit price priority review questions', () => {
     const rows = Array.from({ length: 50 }, (_, index) => ({
       Product: `Item ${index + 1}`,
