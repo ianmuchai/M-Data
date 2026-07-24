@@ -5085,3 +5085,139 @@ th button[data-tooltip]:focus-visible::before,
     max-width: calc(100% - 42px);
   }
 }
+/* BizDATA compact assistant polish */
+.data-assistant {
+  width: min(390px, calc(100vw - 28px));
+}
+
+.assistant-panel {
+  gap: 9px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fbfffe 0%, #f3faf9 100%);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+}
+
+.assistant-header {
+  padding: 12px 14px 10px;
+}
+
+.assistant-header strong {
+  font-size: 0.88rem;
+  line-height: 1.2;
+}
+
+.assistant-mode {
+  margin-top: 5px;
+  padding: 3px 7px;
+  font-size: 0.66rem;
+}
+
+.assistant-header button {
+  padding: 6px 9px;
+  font-size: 0.72rem;
+}
+
+.assistant-messages {
+  gap: 9px;
+  max-height: 320px;
+  padding: 10px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(236, 253, 245, 0.58);
+}
+
+.assistant-message-row {
+  gap: 6px;
+}
+
+.assistant-avatar {
+  flex-basis: 22px;
+  width: 22px;
+  height: 22px;
+  font-size: 0.62rem;
+  box-shadow: none;
+}
+
+.assistant-message {
+  max-width: min(84%, 300px);
+  border-radius: 16px;
+  padding: 8px 10px 9px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.07);
+}
+
+.assistant-message.assistant {
+  border-bottom-left-radius: 5px;
+}
+
+.assistant-message.user {
+  border-bottom-right-radius: 5px;
+  background: #0f766e;
+}
+
+.message-author {
+  margin-bottom: 3px;
+  font-size: 0.6rem;
+}
+
+.assistant-message p {
+  margin-bottom: 5px;
+  font-size: 0.8rem;
+  line-height: 1.38;
+}
+
+.assistant-prompts {
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.assistant-prompts button {
+  padding: 6px 8px;
+  font-size: 0.69rem;
+  box-shadow: none;
+}
+
+.assistant-thinking {
+  margin: 0 10px;
+  padding: 7px 10px;
+  font-size: 0.72rem;
+}
+
+.assistant-input {
+  gap: 6px;
+  margin: 0 2px 2px;
+  padding: 5px;
+}
+
+.assistant-input input {
+  padding: 8px 10px;
+  font-size: 0.8rem;
+}
+
+.assistant-input button {
+  min-height: 32px;
+  padding: 0 11px;
+  font-size: 0.74rem;
+  box-shadow: none;
+}
+
+.assistant-upload {
+  margin: -2px 12px 12px;
+  padding: 7px 10px;
+  font-size: 0.74rem;
+}
+
+@media (max-width: 760px) {
+  .data-assistant {
+    width: calc(100vw - 24px);
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .assistant-panel {
+    max-height: min(640px, calc(100vh - 28px));
+  }
+
+  .assistant-messages {
+    max-height: 300px;
+  }
+}
