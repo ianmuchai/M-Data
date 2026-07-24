@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { AnalyticsResponse, PresentationPreset, UploadAnalysisResponse, VisualStoryConfig, VisualStoryType } from '../../shared/analytics';
 import {
@@ -52,6 +52,8 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
   const preview = useMemo(() => buildVisualStoryPreview({ config, dashboard, upload }), [config, dashboard, upload]);
   const deck = useMemo(() => buildPresentationDeck({ config, dashboard, upload }), [config, dashboard, upload]);
   const selectedSlide = deck.slides.find((slide) => slide.id === selectedSlideId) ?? deck.slides[0];
+  const selectedSlideIndex = Math.max(0, deck.slides.findIndex((slide) => slide.id === selectedSlide.id));
+  const selectedSlideChartData = useMemo(() => selectedSlide.visualPoints.slice(0, 12).map((point) => ({ name: point.name, value: point.value, comparison: point.comparison ?? undefined })), [selectedSlide]);
   const chartData = useMemo(() => preview.series.slice(0, 12).map((point) => ({ name: point.name, value: point.value, comparison: point.comparison ?? undefined })), [preview.series]);
   const selectedVisual = visualTypeOptions.find((option) => option.key === config.visualType) ?? visualTypeOptions[0];
   const selectedPreset = presetOptions.find((option) => option.key === config.preset) ?? presetOptions[0];
@@ -211,22 +213,60 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
               ))}
             </div>
 
-            <article className="slide-preview">
-              <p className="eyebrow">{selectedSlide.section}</p>
-              <h3>{selectedSlide.title}</h3>
-              <span>{selectedSlide.subtitle}</span>
-              <p>{selectedSlide.narrative}</p>
-              <div className="metrics-grid upload-metrics">
-                {selectedSlide.metrics.slice(0, 4).map((metric) => (
-                  <article className="metric-card compact-card" key={metric.label}>
-                    <div><p>{metric.label}</p><h3>{metric.value}</h3></div>
-                    <span className={`delta ${metric.sentiment}`}>{metric.delta}</span>
-                  </article>
-                ))}
+            <article className="slide-preview powerpoint-slide">
+              <header className="slide-preview-header">
+                <p className="eyebrow">{selectedSlide.section}</p>
+                <span>{String(selectedSlideIndex + 1).padStart(2, '0')} / {String(deck.slides.length).padStart(2, '0')}</span>
+              </header>
+
+              <div className="slide-preview-body">
+                <div className="slide-copy-block">
+                  <h3>{selectedSlide.title}</h3>
+                  <span>{selectedSlide.subtitle}</span>
+                  <p>{selectedSlide.narrative}</p>
+                </div>
+
+                <div className="slide-metric-strip">
+                  {selectedSlide.metrics.slice(0, 4).map((metric) => (
+                    <article key={metric.label}>
+                      <span>{metric.label}</span>
+                      <strong>{metric.value}</strong>
+                      <small>{metric.delta}</small>
+                    </article>
+                  ))}
+                  {!selectedSlide.metrics.length ? <article><span>Slide focus</span><strong>{selectedSlide.section.split('/').pop()?.trim() ?? 'Review'}</strong><small>narrative slide</small></article> : null}
+                </div>
+
+                {selectedSlideChartData.length ? (
+                  <div className="slide-evidence-chart" aria-label="Selected slide visual evidence">
+                    <ResponsiveContainer width="100%" height={180}>
+                      <LineChart data={selectedSlideChartData} margin={{ bottom: 10, left: 0, right: 14, top: 16 }}>
+                        <CartesianGrid stroke="rgba(15, 23, 42, 0.08)" vertical={false} />
+                        <XAxis dataKey="name" interval={0} tick={{ fill: '#475569', fontSize: 10 }} tickLine={false} />
+                        <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} width={44} />
+                        <Tooltip formatter={(value) => Number(value).toLocaleString('en-US')} />
+                        <Line dataKey="value" dot={{ fill: '#f97316', r: 4, stroke: '#ffffff', strokeWidth: 2 }} stroke="#0f766e" strokeWidth={3} type="monotone" />
+                        <Line dataKey="comparison" dot={false} stroke="#94a3b8" strokeDasharray="5 5" strokeWidth={2} type="monotone" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : null}
+
+                <div className="slide-content-grid">
+                  <div className="slide-bullets">
+                    {selectedSlide.bullets.slice(0, 8).map((bullet) => <span key={bullet}>{bullet}</span>)}
+                  </div>
+                  <aside className="slide-speaker-notes">
+                    <strong>Recommended action</strong>
+                    {(selectedSlide.recommendations.length ? selectedSlide.recommendations : ['Use this slide to explain the finding, business meaning, and next decision.']).slice(0, 5).map((recommendation) => <p key={recommendation}>{recommendation}</p>)}
+                  </aside>
+                </div>
               </div>
-              <div className="slide-bullets">
-                {selectedSlide.bullets.slice(0, 8).map((bullet) => <span key={bullet}>{bullet}</span>)}
-              </div>
+
+              <footer className="slide-preview-footer">
+                <span>BizDATA analytics presentation</span>
+                <span>{new Date(deck.generatedAt).toLocaleDateString()}</span>
+              </footer>
             </article>
           </section>
         </div>

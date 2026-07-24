@@ -4348,3 +4348,220 @@ th button[data-tooltip]:focus-visible::before,
     grid-template-columns: 1fr;
   }
 }
+
+.powerpoint-slide {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 10px;
+  padding: 0;
+  background: linear-gradient(135deg, #ffffff 0 58%, #ecfeff 58% 100%);
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.16);
+}
+
+.powerpoint-slide::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 9px;
+  background: linear-gradient(90deg, #0f766e, #2563eb, #f97316);
+  content: "";
+}
+
+.slide-preview-header,
+.slide-preview-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 24px 0;
+}
+
+.slide-preview-header .eyebrow {
+  margin: 0;
+}
+
+.slide-preview-header span,
+.slide-preview-footer span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.slide-preview-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.16fr) minmax(260px, 0.84fr);
+  grid-template-rows: auto auto 1fr;
+  gap: 14px;
+  padding: 18px 24px 16px;
+}
+
+.slide-copy-block {
+  min-width: 0;
+}
+
+.slide-copy-block h3 {
+  max-width: 720px;
+  margin: 0;
+  color: #0f172a;
+  font-size: 2rem;
+  line-height: 1.04;
+}
+
+.slide-copy-block > span {
+  display: block;
+  margin-top: 8px;
+  color: #2563eb;
+  font-size: 0.94rem;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.slide-copy-block p {
+  margin: 14px 0 0;
+  color: #334155;
+  font-size: 0.92rem;
+  line-height: 1.48;
+}
+
+.slide-metric-strip {
+  display: grid;
+  grid-column: 2;
+  grid-row: 1 / 3;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.slide-metric-strip article {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  min-height: 88px;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 8px;
+  padding: 11px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.slide-metric-strip span,
+.slide-metric-strip small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 850;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slide-metric-strip strong {
+  overflow-wrap: anywhere;
+  color: #0f172a;
+  font-size: 1.24rem;
+  line-height: 1.05;
+}
+
+.slide-evidence-chart {
+  grid-column: 1;
+  min-width: 0;
+  min-height: 190px;
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 8px;
+  padding: 4px 8px;
+  background: repeating-linear-gradient(0deg, rgba(15, 23, 42, 0.05) 0 1px, transparent 1px 34px), linear-gradient(135deg, #ffffff, #eff6ff);
+}
+
+.slide-content-grid {
+  display: grid;
+  grid-column: 1 / 3;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+  gap: 12px;
+  align-items: start;
+  min-height: 0;
+}
+
+.powerpoint-slide .slide-bullets {
+  gap: 7px;
+}
+
+.powerpoint-slide .slide-bullets span {
+  border-left-color: #0f766e;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.78);
+  font-size: 0.78rem;
+  line-height: 1.34;
+}
+
+.slide-speaker-notes {
+  display: grid;
+  gap: 7px;
+  border-left: 4px solid #f97316;
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: rgba(255, 247, 237, 0.92);
+}
+
+.slide-speaker-notes strong {
+  color: #9a3412;
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.slide-speaker-notes p {
+  margin: 0;
+  color: #334155;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.slide-preview-footer {
+  position: absolute;
+  right: 0;
+  bottom: 9px;
+  left: 0;
+  padding: 0 24px 14px;
+}
+
+@media (max-width: 1120px) {
+  .powerpoint-slide {
+    aspect-ratio: auto;
+  }
+
+  .slide-preview-body,
+  .slide-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .slide-metric-strip,
+  .slide-evidence-chart,
+  .slide-content-grid {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .slide-preview-footer {
+    position: static;
+    padding: 0 24px 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  .slide-preview-header,
+  .slide-preview-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .slide-copy-block h3 {
+    font-size: 1.42rem;
+  }
+
+  .slide-metric-strip {
+    grid-template-columns: 1fr;
+  }
+}

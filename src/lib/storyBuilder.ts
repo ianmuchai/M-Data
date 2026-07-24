@@ -167,22 +167,54 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
   const results = readyResults(upload);
   const deckTitle = `${sourceTitle(config.source, dashboard, upload)} presentation`;
   const recommendations = upload?.recommendations ?? preview.insights;
+  const enabledMethods = upload?.advancedAnalytics.methods.filter((method) => method.enabled) ?? [];
+  const topQuestions = upload?.businessQuestions.slice(0, 5) ?? [];
+  const sourceSummary = upload
+    ? `${upload.rowCount.toLocaleString('en-US')} records, ${upload.columnCount.toLocaleString('en-US')} fields, ${upload.qualityScore}/100 quality score.`
+    : dashboard ? `Dashboard score ${dashboard.summary.score}/100 with target ${dashboard.summary.target}.` : 'BizDATA generated this deck from the available workspace context.';
+  const appendixBullets = [
+    ...(upload?.analysisOptions.slice(0, 4).map((option) => `${option.title}: ${option.description}`) ?? []),
+    ...(upload?.filterViews.slice(0, 3).map((view) => `${view.title}: ${view.rowCount.toLocaleString('en-US')} records; ${view.description}`) ?? []),
+    ...(dashboard?.detailPoints.slice(0, 4).map((detail) => `${detail.title}: ${detail.value} - ${detail.caption}`) ?? []),
+  ];
 
   const slides: PresentationSlide[] = [
     slide(
       'summary',
-      'Executive Summary',
+      '01 / Executive Summary',
       deckTitle,
       presetIntro(config.preset),
       preview.insights[0] ?? 'BizDATA prepared this presentation from the available analytics.',
       preview.metrics.slice(0, 4),
-      preview.insights.slice(0, 6),
+      [sourceSummary, ...preview.insights.slice(0, 5)],
       preview.series.slice(0, 12),
       recommendations.slice(0, 5),
     ),
     slide(
+      'agenda',
+      '02 / Presentation Roadmap',
+      'How to read this analysis deck',
+      `${config.preset} audience, ${config.narrativeStyle} explanation depth, ${config.visualType} primary visual style.`,
+      'This deck is structured like a decision presentation: context first, then evidence, risks, and recommended action.',
+      [
+        { delta: `${preview.metrics.length} KPI cards`, label: 'KPI coverage', sentiment: 'positive', value: String(preview.metrics.length) },
+        { delta: `${topQuestions.length} priority answers`, label: 'Business questions', sentiment: topQuestions.length ? 'positive' : 'neutral', value: String(topQuestions.length) },
+        { delta: `${enabledMethods.length} methods ready`, label: 'Analytics depth', sentiment: enabledMethods.length ? 'positive' : 'warning', value: String(enabledMethods.length) },
+        { delta: `${recommendations.length} actions`, label: 'Next steps', sentiment: recommendations.length ? 'positive' : 'neutral', value: String(recommendations.length) },
+      ],
+      [
+        'Executive summary: what matters most and why.',
+        'Business questions: practical answers in plain language.',
+        'Analytics coverage: regression, correlation, trends, ranking, forecasting, and other ready methods.',
+        'Visual evidence: chart-ready movement, comparison, and ranking data.',
+        'Risk and recommendations: what to review, decide, assign, or export.',
+      ],
+      preview.series.slice(0, 12),
+      recommendations.slice(0, 4),
+    ),
+    slide(
       'business-questions',
-      'Business Questions',
+      '03 / Business Questions',
       'The practical questions this dataset answers',
       upload ? `${upload.businessQuestions.length} generated business answers with confidence scoring and evidence.` : 'Dashboard business signals and alerts.',
       'This section turns the raw analysis into management questions, evidence, and action.',
@@ -193,7 +225,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
     slide(
       'methods',
-      'Analytics Coverage',
+      '04 / Analytics Coverage',
       'Methods available and what they contribute',
       results.length ? `${results.length} analytical methods produced ready results.` : 'Available analytical methods are listed with readiness notes.',
       'Use this slide to show that the presentation is based on multiple analytical lenses, not a single chart.',
@@ -204,7 +236,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
     slide(
       'visual-evidence',
-      'Visual Evidence',
+      '05 / Visual Evidence',
       preview.title,
       preview.subtitle,
       'This slide provides the main chart-ready evidence used in the presentation preview.',
@@ -215,7 +247,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
     slide(
       'data-quality',
-      'Data Quality and Fields',
+      '06 / Data Quality and Fields',
       upload ? `${upload.fileName} readiness` : 'Dashboard readiness',
       upload ? `${upload.rowCount.toLocaleString('en-US')} rows, ${upload.columnCount.toLocaleString('en-US')} columns, ${upload.qualityScore}/100 quality score.` : 'Built-in dashboard data is available for reporting.',
       'This slide explains whether the analysis is reliable enough for decisions and which fields matter most.',
@@ -226,7 +258,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
     slide(
       'risk',
-      'Risks and Exceptions',
+      '07 / Risks and Exceptions',
       'Signals that need attention',
       'Data quality, operational, accounting, market, and confidence signals that may affect decisions.',
       'Use this slide to prevent the presentation from hiding uncertainty, exceptions, or follow-up work.',
@@ -237,7 +269,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
     slide(
       'recommendations',
-      'Recommendations',
+      '08 / Recommendations',
       'What to do next',
       'Prioritized actions generated from business questions, analytical methods, data quality, and detected signals.',
       'Use these recommendations to turn the analysis into concrete owners, reviews, and decisions.',
@@ -246,6 +278,17 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
       [],
       recommendations.slice(0, 9),
     ),
+    slide(
+      'appendix',
+      '09 / Evidence Appendix',
+      'Supporting tables, filters, and analysis views',
+      'A backup slide for users who need the exact analytical surfaces behind the story.',
+      'Use this appendix when presenting to analysts, finance teams, operations managers, or anyone who needs traceability.',
+      results.flatMap((item) => advancedMetricsToMetrics(item.metrics)).slice(0, 4),
+      appendixBullets.length ? appendixBullets.slice(0, 9) : [...preview.insights, ...recommendations].slice(0, 9),
+      results.flatMap((item) => item.series).slice(0, 12),
+      recommendations.slice(0, 6),
+    ),
   ];
 
   return {
@@ -253,11 +296,10 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     preset: config.preset,
     slides,
     source: config.source,
-    subtitle: `${config.narrativeStyle} narrative with ${config.theme} theme | ${slides.length} slides | built from all available analytics`,
+    subtitle: `${config.narrativeStyle} narrative with ${config.theme} theme | ${slides.length} PowerPoint-style slides | built from all available analytics`,
     title: deckTitle,
   };
 }
-
 export function downloadStoryConfig(config: VisualStoryConfig) {
   downloadBlob('bizdata-visual-story-config.json', JSON.stringify(config, null, 2), 'application/json');
 }
@@ -285,17 +327,30 @@ export function downloadPresentationPdf(deck: PresentationDeck) {
 }
 
 export function downloadPresentationHtml(deck: PresentationDeck) {
-  const slides = deck.slides.map((item) => `
+  const slides = deck.slides.map((item, index) => {
+    const maxValue = Math.max(...item.visualPoints.map((entry) => entry.value), 1);
+    const points = item.visualPoints.map((point, pointIndex, list) => `<span style="left:${list.length <= 1 ? 50 : (pointIndex / (list.length - 1)) * 100}%;bottom:${Math.max(8, Math.min(90, point.value / maxValue * 86))}%" title="${escapeHtml(point.name)}: ${escapeHtml(point.value)}"></span>`).join('');
+    return `
     <section class="slide">
-      <p class="eyebrow">${escapeHtml(item.section)}</p>
-      <h1>${escapeHtml(item.title)}</h1>
-      <h2>${escapeHtml(item.subtitle)}</h2>
-      <p class="narrative">${escapeHtml(item.narrative)}</p>
-      <div class="metrics">${item.metrics.map((metric) => `<article><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.value)}</strong><small>${escapeHtml(metric.delta)}</small></article>`).join('')}</div>
-      <ul>${item.bullets.map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join('')}</ul>
-      ${item.recommendations.length ? `<h3>Recommended action</h3><ul>${item.recommendations.map((recommendation) => `<li>${escapeHtml(recommendation)}</li>`).join('')}</ul>` : ''}
-      <div class="line">${item.visualPoints.map((point, index, list) => `<span style="left:${list.length <= 1 ? 50 : (index / (list.length - 1)) * 100}%;bottom:${Math.max(8, Math.min(92, point.value / Math.max(...list.map((entry) => entry.value), 1) * 90))}%" title="${escapeHtml(point.name)}: ${escapeHtml(point.value)}"></span>`).join('')}</div>
-    </section>`).join('');
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(deck.title)}</title><style>body{margin:0;background:#eef7fb;color:#0f172a;font-family:Inter,Segoe UI,sans-serif}.deck{display:grid;gap:24px;max-width:1180px;margin:0 auto;padding:32px}.slide{min-height:620px;padding:34px;border:1px solid rgba(15,23,42,.12);border-radius:8px;background:linear-gradient(135deg,#fff,#ecfeff 56%,#eff6ff);box-shadow:0 18px 46px rgba(15,23,42,.12);break-inside:avoid}.eyebrow{color:#0f766e;font-weight:900;text-transform:uppercase}p{color:#64748b}h1{font-size:40px;margin:8px 0}h2{font-size:20px;color:#2563eb}.narrative{font-size:18px;line-height:1.55}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.metrics article{padding:14px;border-radius:8px;background:#fff}.metrics span,.metrics small{display:block;color:#64748b}.metrics strong{display:block;font-size:24px}.line{position:relative;height:140px;margin-top:20px;border-radius:8px;background:repeating-linear-gradient(0deg,rgba(15,23,42,.08) 0 1px,transparent 1px 34px)}.line span{position:absolute;width:10px;height:10px;border-radius:999px;background:#0f766e;box-shadow:0 0 0 3px #fff}li{margin:8px 0;line-height:1.45}@media print{body{background:#fff}.slide{box-shadow:none}}</style></head><body><main class="deck">${slides}</main></body></html>`;
+      <div class="slide-frame">
+        <header><p>${escapeHtml(item.section)}</p><strong>${String(index + 1).padStart(2, '0')} / ${String(deck.slides.length).padStart(2, '0')}</strong></header>
+        <main>
+          <div class="story-copy">
+            <h1>${escapeHtml(item.title)}</h1>
+            <h2>${escapeHtml(item.subtitle)}</h2>
+            <p class="narrative">${escapeHtml(item.narrative)}</p>
+          </div>
+          <div class="metrics">${item.metrics.slice(0, 4).map((metric) => `<article><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.value)}</strong><small>${escapeHtml(metric.delta)}</small></article>`).join('')}</div>
+          ${item.visualPoints.length ? `<div class="line">${points}</div>` : ''}
+          <div class="content-grid">
+            <ul>${item.bullets.slice(0, 8).map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join('')}</ul>
+            ${item.recommendations.length ? `<aside><b>Recommended action</b>${item.recommendations.slice(0, 5).map((recommendation) => `<p>${escapeHtml(recommendation)}</p>`).join('')}</aside>` : ''}
+          </div>
+        </main>
+        <footer><span>BizDATA analytics presentation</span><span>${escapeHtml(new Date(deck.generatedAt).toLocaleDateString())}</span></footer>
+      </div>
+    </section>`;
+  }).join('');
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(deck.title)}</title><style>@page{size:landscape;margin:0}*{box-sizing:border-box}body{margin:0;background:#e8f3f5;color:#0f172a;font-family:Inter,Segoe UI,Arial,sans-serif}.deck{display:grid;gap:28px;max-width:1280px;margin:0 auto;padding:32px}.slide{aspect-ratio:16/9;width:100%;break-inside:avoid;page-break-after:always}.slide-frame{position:relative;display:grid;grid-template-rows:auto 1fr auto;min-height:100%;overflow:hidden;border:1px solid rgba(15,23,42,.1);border-radius:10px;background:linear-gradient(135deg,#fff 0 55%,#ecfeff 55% 100%);box-shadow:0 24px 64px rgba(15,23,42,.16)}.slide-frame:before{position:absolute;inset:auto 0 0 0;height:10px;background:linear-gradient(90deg,#0f766e,#2563eb,#f97316);content:""}header,footer{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:22px 30px}header p{margin:0;color:#0f766e;font-size:12px;font-weight:900;text-transform:uppercase}header strong,footer{color:#64748b;font-size:12px;font-weight:800}main{position:relative;z-index:1;display:grid;grid-template-columns:1.2fr .8fr;grid-template-rows:auto auto 1fr;gap:18px;padding:0 30px 24px}.story-copy{grid-column:1 / 2}.story-copy h1{margin:0;color:#0f172a;font-size:38px;line-height:1.05}.story-copy h2{margin:10px 0 0;color:#2563eb;font-size:17px;line-height:1.25}.narrative{margin:18px 0 0;color:#334155;font-size:17px;line-height:1.5}.metrics{grid-column:2 / 3;grid-row:1 / 3;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.metrics article{min-height:96px;border:1px solid rgba(15,118,110,.12);border-radius:8px;padding:13px;background:rgba(255,255,255,.9)}.metrics span,.metrics small{display:block;color:#64748b;font-size:12px;font-weight:800}.metrics strong{display:block;margin:7px 0;color:#0f172a;font-size:24px;line-height:1.05}.line{grid-column:1 / 2;position:relative;height:150px;border:1px solid rgba(37,99,235,.12);border-radius:8px;background:repeating-linear-gradient(0deg,rgba(15,23,42,.07) 0 1px,transparent 1px 34px),linear-gradient(135deg,#ffffff,#eff6ff)}.line span{position:absolute;width:11px;height:11px;border-radius:999px;background:#0f766e;box-shadow:0 0 0 4px #fff}.content-grid{grid-column:1 / 3;display:grid;grid-template-columns:1.2fr .8fr;gap:16px;align-items:start}ul{margin:0;padding-left:20px}li{margin:7px 0;color:#334155;font-size:14px;line-height:1.38}aside{border-left:4px solid #f97316;border-radius:8px;padding:12px 14px;background:rgba(255,247,237,.92)}aside b{display:block;margin-bottom:6px;color:#9a3412;font-size:12px;text-transform:uppercase}aside p{margin:6px 0;color:#334155;font-size:13px;line-height:1.35}footer{padding-top:0}@media print{body{background:#fff}.deck{display:block;max-width:none;padding:0}.slide{width:100vw;height:100vh}.slide-frame{border:0;border-radius:0;box-shadow:none}}@media(max-width:760px){.deck{padding:14px}.slide{aspect-ratio:auto}.slide-frame{min-height:720px}main,.content-grid{grid-template-columns:1fr}.metrics,.story-copy,.line,.content-grid{grid-column:1}.metrics{grid-row:auto}.story-copy h1{font-size:28px}}</style></head><body><main class="deck">${slides}</main></body></html>`;
   downloadBlob(`${safeName(deck.title)}.html`, html, 'text/html');
 }
