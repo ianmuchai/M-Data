@@ -4,6 +4,7 @@ import { categories, ranges } from './analyticsData';
 import { buildAnalyticsResponse, normalizeCategory, normalizeRange } from './analyticsService';
 import { analyzeRows, analyzeUpload } from './uploadAnalysisService';
 import { isAllowedCorsOrigin, parseAllowedOrigins } from './corsPolicy';
+import { answerWithExternalAgent } from './chatAgentService';
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
@@ -41,6 +42,28 @@ app.get('/api/analytics', (request, response) => {
   response.json(buildAnalyticsResponse(selectedCategory, selectedRange));
 });
 
+app.post('/api/chat-agent', async (request, response) => {
+  const question = typeof request.body?.question === 'string' ? request.body.question : '';
+  const analysis = request.body?.analysis ?? null;
+  const messages = Array.isArray(request.body?.messages) ? request.body.messages : [];
+
+  if (!question.trim()) {
+    response.status(400).json({ error: 'No question provided' });
+    return;
+  }
+
+  try {
+    const result = await answerWithExternalAgent({ analysis, messages, question });
+    if (!result.configured) {
+      response.status(503).json({ error: 'External AI is not configured', configured: false });
+      return;
+    }
+
+    response.json({ answer: result.answer, configured: true, model: process.env.OPENAI_CHAT_MODEL || 'gpt-4.1-mini' });
+  } catch (error) {
+    response.status(502).json({ error: error instanceof Error ? error.message : 'Unable to run chat agent' });
+  }
+});
 app.post('/api/analyze-upload', async (request, response) => {
   const fileName = typeof request.body?.fileName === 'string' ? request.body.fileName : 'uploaded-data.csv';
   const rows = Array.isArray(request.body?.rows) ? request.body.rows : null;
@@ -71,5 +94,3 @@ if (!process.env.VERCEL) {
 
 export { app };
 export default app;
-
-

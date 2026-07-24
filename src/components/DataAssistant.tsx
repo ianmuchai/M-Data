@@ -1,5 +1,6 @@
 ﻿import { useMemo, useState } from 'react';
 import type { UploadAnalysisResponse } from '../../shared/analytics';
+import { askExternalChatAgent } from '../api/chatAgent';
 import { numberFormatter } from '../lib/format';
 
 type ChatMessage = {
@@ -126,7 +127,8 @@ function answerGroupedQuestion(question: string, analysis: UploadAnalysisRespons
   const normalizedQuestion = normalize(question);
   const numericColumns = analysis.columns.filter((column) => column.type === 'number');
   const textColumns = analysis.columns.filter((column) => column.type !== 'number');
-  const metric = columnMatch(question, analysis)?.type === 'number' ? columnMatch(question, analysis) : numericColumns[0];
+  const matched = columnMatch(question, analysis);
+  const metric = matched?.type === 'number' ? matched : numericColumns[0];
   const dimension = textColumns.find((column) => normalizedQuestion.includes(normalize(column.name))) ?? textColumns.find((column) => /(branch|product|rep|customer|supplier|category|region|department|method)/.test(normalize(column.name)));
   if (!metric || !dimension) return null;
   if (!/(by|per|which|highest|lowest|top|group|segment|branch|product|supplier|customer|category|department|rep|who|where)/.test(normalizedQuestion)) return null;
@@ -237,8 +239,10 @@ Fields used: ${businessQuestion.fields.join(', ')}`;
 export function DataAssistant({ analysis, enabled, onUploadRequest }: DataAssistantProps) {
   const [open, setOpen] = useState(true);
   const [input, setInput] = useState('');
+  const [thinking, setThinking] = useState(false);
+  const [agentMode, setAgentMode] = useState<'external' | 'local'>('local');
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', text: 'Hi, I am the BizDATA assistant. Ask naturally: “what is going on?”, “what should I do?”, “which branch is best?”, or “explain the risks.”' },
+    { role: 'assistant', text: 'Hi, I am the BizDATA agent. Ask naturally: "what is going on?", "what should I do?", "which groups are best?", or "explain the risks."' },
   ]);
 
   const quickPrompts = useMemo(() => [
@@ -250,11 +254,26 @@ export function DataAssistant({ analysis, enabled, onUploadRequest }: DataAssist
 
   if (!enabled) return null;
 
-  const submit = (value = input) => {
+  const submit = async (value = input) => {
     const question = value.trim();
-    if (!question) return;
-    setMessages((current) => [...current, { role: 'user', text: question }, { role: 'assistant', text: buildAssistantAnswer(question, analysis) }]);
+    if (!question || thinking) return;
+
+    const userMessage: ChatMessage = { role: 'user', text: question };
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
     setInput('');
+    setThinking(true);
+
+    try {
+      const result = await askExternalChatAgent(question, analysis, nextMessages);
+      setAgentMode('external');
+      setMessages((current) => [...current, { role: 'assistant', text: result.answer }]);
+    } catch {
+      setAgentMode('local');
+      setMessages((current) => [...current, { role: 'assistant', text: `${buildAssistantAnswer(question, analysis)}\n\nAgent note: External AI is not configured yet, so I answered using the local BizDATA workbook agent.` }]);
+    } finally {
+      setThinking(false);
+    }
   };
 
   return (
@@ -265,6 +284,7 @@ export function DataAssistant({ analysis, enabled, onUploadRequest }: DataAssist
             <div>
               <p className="eyebrow">BizDATA Agent</p>
               <strong>{analysis ? `Ready for ${analysis.fileName}` : 'Upload data to unlock answers'}</strong>
+              <span className="assistant-mode">{agentMode === 'external' ? 'External AI agent' : 'Local workbook agent'}</span>
             </div>
             <button aria-label="Hide assistant" onClick={() => setOpen(false)} type="button">Hide</button>
           </div>
@@ -277,13 +297,15 @@ export function DataAssistant({ analysis, enabled, onUploadRequest }: DataAssist
             ))}
           </div>
 
+          {thinking ? <div className="assistant-thinking">Reviewing workbook context, analytics, fields, and business questions...</div> : null}
+
           <div className="assistant-prompts">
-            {quickPrompts.map((prompt) => <button key={prompt} onClick={() => submit(prompt)} type="button">{prompt}</button>)}
+            {quickPrompts.map((prompt) => <button key={prompt} onClick={() => void submit(prompt)} type="button">{prompt}</button>)}
           </div>
 
-          <form className="assistant-input" onSubmit={(event) => { event.preventDefault(); submit(); }}>
+          <form className="assistant-input" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
             <input onChange={(event) => setInput(event.target.value)} placeholder={analysis ? 'Ask naturally about the workbook, risks, trends, groups, or next actions' : 'Upload data first or ask what I can do'} value={input} />
-            <button type="submit">Ask</button>
+            <button disabled={thinking} type="submit">{thinking ? 'Thinking' : 'Ask'}</button>
           </form>
 
           {!analysis ? <button className="assistant-upload" onClick={onUploadRequest} type="button">Go to upload</button> : null}

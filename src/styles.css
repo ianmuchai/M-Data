@@ -3593,6 +3593,22 @@ body {
   line-height: 1.25;
 }
 
+.assistant-mode {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 5px;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: rgba(240, 253, 250, 0.9);
+  color: #0f766e;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
 .assistant-header button,
 .assistant-launcher,
 .assistant-input button,
@@ -3654,6 +3670,17 @@ body {
   padding: 0 14px;
 }
 
+.assistant-thinking {
+  margin: 0 14px;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.94), rgba(239, 246, 255, 0.9));
+  color: #0f766e;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
 .assistant-prompts button {
   border: 1px solid rgba(37, 99, 235, 0.12);
   border-radius: 999px;
@@ -3684,6 +3711,11 @@ body {
   padding: 0 14px;
   background: linear-gradient(135deg, #00a6a6, #2563eb);
   color: #ffffff;
+}
+
+.assistant-input button:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .assistant-upload {
