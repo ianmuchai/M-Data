@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { AnalyticsResponse, PresentationPreset, UploadAnalysisResponse, VisualStoryConfig, VisualStoryType } from '../../shared/analytics';
 import {
   buildPresentationDeck,
@@ -26,12 +26,67 @@ const visualTypeOptions: Array<{ key: VisualStoryType; label: string; helper: st
   { key: 'insights', label: 'Insights - key findings', helper: 'Best when the story is more narrative than numeric.' },
 ];
 
+
 const presetOptions: Array<{ key: PresentationPreset; label: string; helper: string }> = [
   { key: 'executive', label: 'Executive - decisions and summary', helper: 'Short, direct, focused on what changed and what to decide.' },
   { key: 'analyst', label: 'Analyst - evidence and details', helper: 'More metrics, assumptions, field behavior, and supporting evidence.' },
   { key: 'operations', label: 'Operations - actions and bottlenecks', helper: 'Priorities, exceptions, queues, delays, stock, owners, and next steps.' },
   { key: 'board', label: 'Board - performance and risk', helper: 'High-level performance, confidence, risk, and strategic recommendation.' },
 ];
+type SlideChartKind = 'bar' | 'line' | 'pie';
+
+const slidePalette = ['#0f766e', '#2563eb', '#f97316', '#7c3aed', '#14b8a6', '#e11d48', '#f59e0b', '#64748b'];
+
+function chooseSlideChartKind(slideId: string, slideIndex: number, hasComparison: boolean, pointCount: number): SlideChartKind {
+  if (slideId.includes('trend') || slideId.includes('visual') || hasComparison) return 'line';
+  if (slideId.includes('summary') || slideId.includes('quality') || (pointCount > 1 && pointCount <= 6 && slideIndex % 3 === 0)) return 'pie';
+  return 'bar';
+}
+
+function SlideEvidenceChart({ data, kind }: { data: Array<{ name: string; value: number; comparison?: number }>; kind: SlideChartKind }) {
+  if (kind === 'pie') {
+    const pieData = data.slice(0, 8).map((entry) => ({ ...entry, value: Math.max(Math.abs(entry.value), 0.01) }));
+
+    return (
+      <ResponsiveContainer width='100%' height={240}>
+        <PieChart>
+          <Tooltip formatter={(value) => Number(value).toLocaleString('en-US')} />
+          <Pie data={pieData} dataKey='value' innerRadius={48} nameKey='name' outerRadius={86} paddingAngle={2}>
+            {pieData.map((entry, index) => <Cell fill={slidePalette[index % slidePalette.length]} key={entry.name} />)}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  if (kind === 'bar') {
+    return (
+      <ResponsiveContainer width='100%' height={240}>
+        <BarChart data={data} margin={{ bottom: 16, left: 0, right: 14, top: 14 }}>
+          <CartesianGrid stroke='rgba(15, 23, 42, 0.08)' vertical={false} />
+          <XAxis dataKey='name' interval={0} tick={{ fill: '#475569', fontSize: 10 }} tickLine={false} />
+          <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} width={44} />
+          <Tooltip formatter={(value) => Number(value).toLocaleString('en-US')} />
+          <Bar dataKey='value' fill='#0f766e' radius={[7, 7, 0, 0]} />
+          <Bar dataKey='comparison' fill='#f97316' radius={[7, 7, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width='100%' height={240}>
+      <LineChart data={data} margin={{ bottom: 16, left: 0, right: 14, top: 14 }}>
+        <CartesianGrid stroke='rgba(15, 23, 42, 0.08)' vertical={false} />
+        <XAxis dataKey='name' interval={0} tick={{ fill: '#475569', fontSize: 10 }} tickLine={false} />
+        <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} width={44} />
+        <Tooltip formatter={(value) => Number(value).toLocaleString('en-US')} />
+        <Line dataKey='value' dot={{ fill: '#f97316', r: 4, stroke: '#ffffff', strokeWidth: 2 }} stroke='#0f766e' strokeWidth={3} type='monotone' />
+        <Line dataKey='comparison' dot={false} stroke='#94a3b8' strokeDasharray='5 5' strokeWidth={2} type='monotone' />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
 
 export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
   const uploadMetricOptions = upload?.columns.filter((column) => column.type === 'number').map((column) => column.name) ?? [];
@@ -54,6 +109,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
   const selectedSlide = deck.slides.find((slide) => slide.id === selectedSlideId) ?? deck.slides[0];
   const selectedSlideIndex = Math.max(0, deck.slides.findIndex((slide) => slide.id === selectedSlide.id));
   const selectedSlideChartData = useMemo(() => selectedSlide.visualPoints.slice(0, 12).map((point) => ({ name: point.name, value: point.value, comparison: point.comparison ?? undefined })), [selectedSlide]);
+  const selectedSlideChartKind = useMemo(() => chooseSlideChartKind(selectedSlide.id, selectedSlideIndex, selectedSlideChartData.some((point) => typeof point.comparison === 'number'), selectedSlideChartData.length), [selectedSlide.id, selectedSlideIndex, selectedSlideChartData]);
   const chartData = useMemo(() => preview.series.slice(0, 12).map((point) => ({ name: point.name, value: point.value, comparison: point.comparison ?? undefined })), [preview.series]);
   const selectedVisual = visualTypeOptions.find((option) => option.key === config.visualType) ?? visualTypeOptions[0];
   const selectedPreset = presetOptions.find((option) => option.key === config.preset) ?? presetOptions[0];
@@ -238,17 +294,12 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
                 </div>
 
                 {selectedSlideChartData.length ? (
-                  <div className="slide-evidence-chart" aria-label="Selected slide visual evidence">
-                    <ResponsiveContainer width="100%" height={180}>
-                      <LineChart data={selectedSlideChartData} margin={{ bottom: 10, left: 0, right: 14, top: 16 }}>
-                        <CartesianGrid stroke="rgba(15, 23, 42, 0.08)" vertical={false} />
-                        <XAxis dataKey="name" interval={0} tick={{ fill: '#475569', fontSize: 10 }} tickLine={false} />
-                        <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} width={44} />
-                        <Tooltip formatter={(value) => Number(value).toLocaleString('en-US')} />
-                        <Line dataKey="value" dot={{ fill: '#f97316', r: 4, stroke: '#ffffff', strokeWidth: 2 }} stroke="#0f766e" strokeWidth={3} type="monotone" />
-                        <Line dataKey="comparison" dot={false} stroke="#94a3b8" strokeDasharray="5 5" strokeWidth={2} type="monotone" />
-                      </LineChart>
-                    </ResponsiveContainer>
+                  <div className={['slide-evidence-chart', selectedSlideChartKind].join(' ')} aria-label='Selected slide visual evidence'>
+                    <div className='slide-chart-title'>
+                      <strong>{selectedSlideChartKind === 'pie' ? 'Share of visual evidence' : selectedSlideChartKind === 'bar' ? 'Ranked analytics evidence' : 'Trend and comparison evidence'}</strong>
+                      <span>{selectedSlideChartData.length} chartable findings from this slide</span>
+                    </div>
+                    <SlideEvidenceChart data={selectedSlideChartData} kind={selectedSlideChartKind} />
                   </div>
                 ) : null}
 

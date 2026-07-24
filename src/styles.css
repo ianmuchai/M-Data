@@ -4639,3 +4639,131 @@ th button[data-tooltip]:focus-visible::before,
     max-height: none;
   }
 }
+
+
+/* BizDATA presentation rendering refinement */
+.presentation-builder {
+  max-height: none;
+  overflow: visible;
+}
+
+.presentation-builder .slide-tabs {
+  position: sticky;
+  top: 88px;
+  z-index: 5;
+}
+
+.powerpoint-slide {
+  aspect-ratio: auto;
+  min-height: clamp(680px, 58vw, 900px);
+  overflow: visible;
+}
+
+.powerpoint-slide::after {
+  pointer-events: none;
+}
+
+.slide-preview-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.72fr);
+  grid-template-areas:
+    'copy metrics'
+    'chart chart'
+    'content content';
+  grid-template-rows: auto auto auto;
+  align-content: start;
+  min-height: 0;
+  gap: 16px;
+  padding-bottom: 10px;
+}
+
+.slide-copy-block {
+  grid-area: copy;
+  min-width: 0;
+}
+
+.slide-metric-strip {
+  grid-area: metrics;
+  grid-column: auto;
+  grid-row: auto;
+  align-content: start;
+}
+
+.slide-evidence-chart {
+  grid-area: chart;
+  grid-column: auto;
+  min-height: 300px;
+  height: auto;
+  padding: 14px 16px 8px;
+  overflow: hidden;
+}
+
+.slide-evidence-chart.pie {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.56fr) minmax(0, 1fr);
+  align-items: center;
+}
+.slide-evidence-chart.pie .recharts-responsive-container {
+  grid-column: 1 / -1;
+  margin: 0 auto;
+}
+
+
+.slide-chart-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  grid-column: 1 / -1;
+  margin-bottom: 6px;
+}
+
+.slide-chart-title strong {
+  color: #0f172a;
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.slide-chart-title span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.slide-content-grid {
+  grid-area: content;
+  grid-column: auto;
+  min-width: 0;
+}
+
+.powerpoint-slide .slide-bullets,
+.slide-speaker-notes {
+  max-height: none;
+  overflow: visible;
+}
+
+.slide-preview-footer {
+  position: static;
+  padding: 4px 24px 18px;
+}
+
+@media (max-width: 980px) {
+  .presentation-builder .slide-tabs {
+    position: static;
+  }
+
+  .slide-preview-body {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'copy'
+      'metrics'
+      'chart'
+      'content';
+  }
+
+  .slide-evidence-chart.pie {
+    grid-template-columns: 1fr;
+  }
+}
