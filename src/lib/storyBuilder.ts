@@ -182,6 +182,43 @@ function comprehensiveFindings(upload: UploadAnalysisResponse | null, dashboard:
     ...dashboard.detailPoints.map((detail) => `Dashboard detail: ${detail.title}. ${detail.value}. ${detail.caption}`),
   ];
 }
+function executiveSummaryContent(input: {
+  dashboard: AnalyticsResponse | null;
+  findings: string[];
+  preview: VisualStoryPreview;
+  recommendations: string[];
+  results: ReturnType<typeof readyResults>;
+  sourceSummary: string;
+  upload: UploadAnalysisResponse | null;
+}) {
+  const { dashboard, findings, preview, recommendations, results, sourceSummary, upload } = input;
+  const topBusiness = upload?.businessQuestions.slice(0, 3).map((question) => `${question.question} ${question.answer}`) ?? [];
+  const topMethods = results.slice(0, 3).map((result) => `${result.title}: ${result.summary}`);
+  const topRisks = upload ? riskBullets(upload, null).slice(0, 3) : dashboard?.alerts.slice(0, 3).map((alert) => `${alert.title}: ${alert.detail}`) ?? [];
+  const action = recommendations[0] ?? preview.insights[0] ?? 'Review the highest-confidence findings, confirm ownership, and export the supporting workbook views.';
+  const bullets = [
+    sourceSummary,
+    ...topBusiness,
+    ...topMethods,
+    ...topRisks.map((risk) => `Risk or watch item: ${risk}`),
+    `Recommended decision path: ${action}`,
+  ].filter(Boolean).slice(0, 8);
+
+  const narrative = upload
+    ? `BizDATA reviewed ${findings.length.toLocaleString('en-US')} findings across ${upload.rowCount.toLocaleString('en-US')} records, ${upload.columnCount.toLocaleString('en-US')} fields, ${upload.businessQuestions.length.toLocaleString('en-US')} business questions, ${results.length.toLocaleString('en-US')} analytical results, and ${upload.filterViews.length.toLocaleString('en-US')} downloadable filter views. The summary below highlights what leadership should understand first, what evidence supports it, and what action should follow.`
+    : `BizDATA reviewed the available dashboard performance signals and summarized the clearest decision points, risks, and next actions for the selected reporting view.`;
+
+  const metrics: Metric[] = upload
+    ? [
+        { delta: `${upload.columnCount.toLocaleString('en-US')} fields`, label: 'Records reviewed', sentiment: 'positive', value: upload.rowCount.toLocaleString('en-US') },
+        { delta: `${upload.qualityScore}/100 quality`, label: 'Data readiness', sentiment: upload.qualityScore >= 75 ? 'positive' : 'warning', value: `${upload.qualityScore}/100` },
+        { delta: `${results.length} methods`, label: 'Findings considered', sentiment: findings.length ? 'positive' : 'neutral', value: findings.length.toLocaleString('en-US') },
+        { delta: `${upload.filterViews.length} downloadable views`, label: 'Action exports', sentiment: upload.filterViews.length ? 'positive' : 'neutral', value: upload.filterViews.length.toLocaleString('en-US') },
+      ]
+    : preview.metrics.slice(0, 4);
+
+  return { bullets, metrics, narrative, recommendation: action };
+}
 
 export function buildPresentationDeck({ config, dashboard, upload }: StoryInput): PresentationDeck {
   const preview = buildVisualStoryPreview({ config, dashboard, upload });
@@ -195,6 +232,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
   const sourceSummary = upload
     ? `${upload.rowCount.toLocaleString('en-US')} records, ${upload.columnCount.toLocaleString('en-US')} fields, ${upload.qualityScore}/100 quality score.`
     : dashboard ? `Dashboard score ${dashboard.summary.score}/100 with target ${dashboard.summary.target}.` : 'BizDATA generated this deck from the available workspace context.';
+  const executive = executiveSummaryContent({ dashboard, findings, preview, recommendations, results, sourceSummary, upload });
   const appendixBullets = [
     ...(upload?.analysisOptions.slice(0, 4).map((option) => `${option.title}: ${option.description}`) ?? []),
     ...(upload?.filterViews.slice(0, 3).map((view) => `${view.title}: ${view.rowCount.toLocaleString('en-US')} records; ${view.description}`) ?? []),
@@ -205,13 +243,13 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     slide(
       'summary',
       '01 / Executive Summary',
-      deckTitle,
-      presetIntro(config.preset),
-      preview.insights[0] ?? 'BizDATA prepared this presentation from the available analytics.',
-      preview.metrics.slice(0, 4),
-      [sourceSummary, ...findings.slice(0, 5)],
+      'Executive summary of findings',
+      sourceSummary,
+      executive.narrative,
+      executive.metrics,
+      executive.bullets,
       preview.series.slice(0, 12),
-      recommendations.slice(0, 5),
+      [executive.recommendation, ...recommendations].slice(0, 5),
     ),
     slide(
       'agenda',

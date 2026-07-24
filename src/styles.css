@@ -4565,3 +4565,77 @@ th button[data-tooltip]:focus-visible::before,
     grid-template-columns: 1fr;
   }
 }
+
+.presentation-builder {
+  max-height: min(980px, calc(100vh - 96px));
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.presentation-builder .panel-header.compact {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  margin: -16px -16px 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(236, 253, 245, 0.94));
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.presentation-builder .slide-tabs {
+  position: sticky;
+  top: 84px;
+  z-index: 5;
+  max-height: 190px;
+  overflow-y: auto;
+  grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+  padding: 8px;
+  background: rgba(248, 250, 252, 0.96);
+  backdrop-filter: blur(14px);
+}
+
+.powerpoint-slide {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.slide-copy-block h3 {
+  font-size: clamp(1.42rem, 2vw, 2rem);
+}
+
+.slide-copy-block p,
+.powerpoint-slide .slide-bullets span,
+.slide-speaker-notes p {
+  overflow-wrap: anywhere;
+}
+
+.powerpoint-slide .slide-bullets {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.slide-speaker-notes {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.slide-preview-body {
+  min-height: calc(100% - 76px);
+}
+
+@media (max-width: 1120px) {
+  .presentation-builder {
+    max-height: none;
+  }
+
+  .presentation-builder .panel-header.compact,
+  .presentation-builder .slide-tabs {
+    position: static;
+  }
+
+  .powerpoint-slide .slide-bullets,
+  .slide-speaker-notes {
+    max-height: none;
+  }
+}
