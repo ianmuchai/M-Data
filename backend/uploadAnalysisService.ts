@@ -1472,6 +1472,56 @@ function buildBusinessQuestions(rows: DataRow[], columns: ColumnProfile[]): Uplo
       recommendation: `Use correlation, regression, segmentation, and outlier checks on ${relationship.left} and ${relationship.right} before making decisions.`,
     });
   }
+  const crossIndustrySpecs: Array<{
+    key: string;
+    question: string;
+    metricHints: string[];
+    dimensionHints: string[];
+    recommendationFocus: string;
+    mode?: 'average' | 'total';
+    confidence: number;
+  }> = [
+    { key: 'customer-retention-priority', question: 'Which customers, members, or accounts need retention attention?', metricHints: ['churn', 'retention', 'renewal', 'satisfaction', 'nps', 'complaint', 'ticket'], dimensionHints: ['customer', 'client', 'member', 'account', 'segment'], recommendationFocus: 'retention, account ownership, service recovery, renewal planning, and customer experience follow-up', mode: 'average', confidence: 84 },
+    { key: 'marketing-channel-performance', question: 'Which marketing channel, campaign, or source is performing best?', metricHints: ['conversion', 'lead', 'revenue', 'sales', 'roi', 'click', 'impression', 'cost'], dimensionHints: ['channel', 'campaign', 'source', 'medium', 'market'], recommendationFocus: 'budget allocation, campaign quality, audience targeting, and channel profitability', confidence: 85 },
+    { key: 'hr-workforce-risk', question: 'Which team, role, or location needs workforce attention?', metricHints: ['attrition', 'absence', 'turnover', 'performance', 'overtime', 'training', 'headcount'], dimensionHints: ['employee', 'team', 'department', 'role', 'location', 'manager'], recommendationFocus: 'staffing, retention, training, workload balance, and manager support', mode: 'average', confidence: 83 },
+    { key: 'healthcare-service-priority', question: 'Which patient group, clinic, or service line needs healthcare performance review?', metricHints: ['wait', 'readmission', 'claim', 'cost', 'outcome', 'satisfaction', 'length of stay'], dimensionHints: ['patient', 'clinic', 'facility', 'department', 'service', 'diagnosis'], recommendationFocus: 'care access, patient safety, clinical quality, capacity, and claims review', mode: 'average', confidence: 82 },
+    { key: 'education-learning-gap', question: 'Which class, course, learner group, or campus needs learning-support attention?', metricHints: ['score', 'grade', 'attendance', 'completion', 'dropout', 'enrolment', 'enrollment'], dimensionHints: ['student', 'class', 'course', 'campus', 'teacher', 'program'], recommendationFocus: 'learning support, attendance intervention, curriculum review, and student progression', mode: 'average', confidence: 82 },
+    { key: 'manufacturing-quality-loss', question: 'Which product, line, plant, or process is driving quality loss?', metricHints: ['defect', 'scrap', 'downtime', 'yield', 'waste', 'rework', 'throughput'], dimensionHints: ['product', 'line', 'plant', 'machine', 'shift', 'process'], recommendationFocus: 'root-cause review, maintenance, quality control, process stability, and production planning', confidence: 84 },
+    { key: 'logistics-service-bottleneck', question: 'Which route, fleet, carrier, or warehouse is causing delivery or service bottlenecks?', metricHints: ['delay', 'late', 'delivery', 'lead time', 'cycle time', 'fuel', 'distance', 'cost'], dimensionHints: ['route', 'carrier', 'driver', 'fleet', 'warehouse', 'hub'], recommendationFocus: 'routing, fleet utilization, carrier SLA, dispatch timing, and warehouse throughput', mode: 'average', confidence: 84 },
+    { key: 'banking-credit-exposure', question: 'Which customer, product, branch, or portfolio carries the highest credit or financial exposure?', metricHints: ['loan', 'balance', 'arrears', 'default', 'risk', 'exposure', 'limit', 'outstanding'], dimensionHints: ['customer', 'account', 'branch', 'product', 'portfolio', 'segment'], recommendationFocus: 'credit control, collections, risk bands, approval policy, and exposure concentration', confidence: 85 },
+    { key: 'insurance-claims-pressure', question: 'Which policy, claimant, product, or region is driving claims pressure?', metricHints: ['claim', 'loss', 'premium', 'reserve', 'settlement', 'fraud', 'incident'], dimensionHints: ['policy', 'claimant', 'product', 'region', 'agent', 'broker'], recommendationFocus: 'claims review, loss ratio, reserving, fraud checks, and underwriting action', confidence: 84 },
+    { key: 'real-estate-asset-performance', question: 'Which property, tenant, location, or asset needs performance review?', metricHints: ['rent', 'occupancy', 'vacancy', 'arrears', 'maintenance', 'valuation', 'yield'], dimensionHints: ['property', 'tenant', 'location', 'unit', 'asset', 'building'], recommendationFocus: 'occupancy, rent collection, maintenance cost, asset yield, and tenant risk', confidence: 83 },
+    { key: 'nonprofit-program-impact', question: 'Which program, donor, region, or beneficiary group shows the strongest impact or funding pressure?', metricHints: ['beneficiary', 'impact', 'grant', 'donation', 'budget', 'outcome', 'reach'], dimensionHints: ['program', 'donor', 'region', 'beneficiary', 'project', 'partner'], recommendationFocus: 'program impact, donor reporting, funding allocation, and beneficiary reach', confidence: 82 },
+    { key: 'energy-utility-consumption', question: 'Which site, meter, customer, or asset is driving utility consumption or service risk?', metricHints: ['usage', 'consumption', 'kwh', 'water', 'outage', 'meter', 'demand', 'load'], dimensionHints: ['site', 'meter', 'customer', 'asset', 'region', 'tariff'], recommendationFocus: 'usage monitoring, loss control, outage risk, tariff review, and asset maintenance', confidence: 82 },
+    { key: 'project-delivery-risk', question: 'Which project, owner, phase, or vendor is creating delivery risk?', metricHints: ['progress', 'delay', 'variance', 'budget', 'cost', 'completion', 'risk'], dimensionHints: ['project', 'owner', 'phase', 'vendor', 'department', 'manager'], recommendationFocus: 'delivery ownership, schedule recovery, budget control, vendor performance, and risk escalation', confidence: 83 },
+    { key: 'compliance-exception-priority', question: 'Which area, owner, process, or record group needs compliance review first?', metricHints: ['compliance', 'audit', 'exception', 'breach', 'incident', 'risk', 'penalty'], dimensionHints: ['owner', 'department', 'process', 'branch', 'region', 'category'], recommendationFocus: 'audit trail, policy adherence, control gaps, regulatory exposure, and exception closure', confidence: 83 },
+  ];
+
+  const existingKeys = new Set(questions.map((question) => question.key));
+  for (const spec of crossIndustrySpecs) {
+    if (existingKeys.has(spec.key)) continue;
+    const metric = findColumn(columns, spec.metricHints, 'number');
+    const dimension = findColumn(columns, spec.dimensionHints, 'text') ?? detectSegmentColumns(rows, columns)[0];
+    if (!metric || !dimension) continue;
+    const groups = groupNumeric(rows, dimension.name, metric.name)
+      .filter((group) => group.count > 0)
+      .sort((a, b) => (spec.mode === 'average' ? b.average - a.average : Math.abs(b.total) - Math.abs(a.total)));
+    const top = groups[0];
+    const bottom = groups[groups.length - 1];
+    if (!top) continue;
+    const value = spec.mode === 'average' ? top.average : top.total;
+    const bottomText = bottom && bottom.label !== top.label ? ` compared with ${formatNumber(spec.mode === 'average' ? bottom.average : bottom.total)} for ${bottom.label}` : '';
+    questions.push({
+      answer: `${top.label} is the priority finding for ${metric.name} by ${dimension.name}, with ${spec.mode === 'average' ? 'an average of' : 'a measured total of'} ${formatNumber(value)}${bottomText}.`,
+      confidence: spec.confidence,
+      evidence: groups.slice(0, 5).map((group) => ({ detail: `${group.count} records; average ${formatNumber(group.average)}`, label: group.label, value: formatNumber(spec.mode === 'average' ? group.average : group.total) })),
+      fields: [dimension.name, metric.name],
+      key: spec.key,
+      question: spec.question,
+      recommendation: `Review ${top.label} for ${spec.recommendationFocus}. Use filters, ranking, trend, and source records before assigning action owners.`,
+    });
+    existingKeys.add(spec.key);
+  }
   const numericColumns = columns.filter((column) => column.type === 'number').slice(0, 4);
   for (const column of numericColumns) {
     const values = getNumericValues(rows, column.name);
@@ -1491,7 +1541,7 @@ function buildBusinessQuestions(rows: DataRow[], columns: ColumnProfile[]): Uplo
     });
   }
 
-  return questions.slice(0, 10);
+  return questions.slice(0, 24);
 }
 function buildRecommendations(columns: ColumnProfile[], signals: UploadSignal[]) {
   const recommendations = [

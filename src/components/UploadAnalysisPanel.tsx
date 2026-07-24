@@ -40,7 +40,7 @@ export function CollapsibleTableCard({ actions, badge, children, defaultOpen = f
           {actions}
         </div>
       </div>
-      {open ? <div className="collapsible-table-body">{children}</div> : null}
+      <div className="collapsible-table-body">{children}</div>
     </div>
   );
 }

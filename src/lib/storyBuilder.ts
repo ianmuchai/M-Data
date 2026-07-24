@@ -143,7 +143,7 @@ function methodBullets(upload: UploadAnalysisResponse | null) {
 
 function businessQuestionBullets(upload: UploadAnalysisResponse | null) {
   if (!upload?.businessQuestions.length) return ['No uploaded business questions are available yet.'];
-  return upload.businessQuestions.slice(0, 8).map((question) => `${question.question} Answer: ${question.answer} Recommendation: ${question.recommendation}`);
+  return upload.businessQuestions.slice(0, 14).map((question) => `${question.question} Answer: ${question.answer} Recommendation: ${question.recommendation}`);
 }
 
 function columnBullets(upload: UploadAnalysisResponse | null) {
@@ -228,7 +228,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
   const recommendations = upload?.recommendations ?? preview.insights;
   const findings = comprehensiveFindings(upload, dashboard);
   const enabledMethods = upload?.advancedAnalytics.methods.filter((method) => method.enabled) ?? [];
-  const topQuestions = upload?.businessQuestions.slice(0, 5) ?? [];
+  const topQuestions = upload?.businessQuestions.slice(0, 12) ?? [];
   const sourceSummary = upload
     ? `${upload.rowCount.toLocaleString('en-US')} records, ${upload.columnCount.toLocaleString('en-US')} fields, ${upload.qualityScore}/100 quality score.`
     : dashboard ? `Dashboard score ${dashboard.summary.score}/100 with target ${dashboard.summary.target}.` : 'BizDATA generated this deck from the available workspace context.';
@@ -295,7 +295,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
       'The practical questions this dataset answers',
       upload ? `${upload.businessQuestions.length} generated business answers with confidence scoring and evidence.` : 'Dashboard business signals and alerts.',
       'This section turns the raw analysis into management questions, evidence, and action.',
-      upload?.businessQuestions.slice(0, 4).map((question) => ({ delta: `${question.confidence}% confidence`, label: question.question.slice(0, 42), sentiment: 'positive', value: question.evidence[0]?.value ?? 'review' })) ?? preview.metrics.slice(0, 4),
+      upload?.businessQuestions.slice(0, 6).map((question) => ({ delta: `${question.confidence}% confidence`, label: question.question.slice(0, 42), sentiment: 'positive', value: question.evidence[0]?.value ?? 'review' })) ?? preview.metrics.slice(0, 4),
       businessQuestionBullets(upload),
       preview.series.slice(0, 12),
       recommendations.slice(0, 5),

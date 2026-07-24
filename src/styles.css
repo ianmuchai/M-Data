@@ -4887,3 +4887,35 @@ th button[data-tooltip]:focus-visible::before,
 .collapse-eyebrow {
   display: block;
 }
+
+.collapsible-table-card.collapsed .collapsible-table-body {
+  max-height: 238px;
+  overflow: hidden;
+  position: relative;
+}
+
+.collapsible-table-card.collapsed .collapsible-table-body::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 64px;
+  background: linear-gradient(180deg, rgba(240, 253, 250, 0), rgba(240, 253, 250, 0.98));
+  content: "";
+  pointer-events: none;
+}
+
+.collapsible-table-card.expanded .collapsible-table-body {
+  max-height: none;
+  overflow: visible;
+}
+
+.collapsible-table-card.collapsed .analysis-table-scroll {
+  max-height: 220px;
+  overflow: hidden;
+}
+
+.collapsible-table-card.collapsed .analysis-table tbody tr:nth-child(n + 5),
+.collapsible-table-card.collapsed .segment-driver-grid article:nth-child(n + 5) {
+  display: none;
+}
