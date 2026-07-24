@@ -1,6 +1,6 @@
 import type { AnalyticsResponse, ReportBuilderConfig, UploadAnalysisResponse } from '../../shared/analytics';
 import { numberFormatter } from '../lib/format';
-import { downloadAnalysisWorkbook, downloadFilterViewPdf, downloadFilterViewWorkbook, downloadUploadAnalysisJson, downloadUploadAnalysisPdf } from '../lib/uploadExports';
+import { downloadAllFilterViewsWorkbook, downloadAnalysisWorkbook, downloadFilterViewPdf, downloadFilterViewWorkbook, downloadUploadAnalysisJson, downloadUploadAnalysisPdf } from '../lib/uploadExports';
 
 type ExportsHubProps = {
   dashboard: AnalyticsResponse | null;
@@ -37,7 +37,7 @@ export function ExportsHub({ dashboard, onExportCsv, onExportJson, onExportPdf, 
           <p className="eyebrow">Downloads Hub</p>
           <h3>Download dashboard files, analyzed summaries, workbooks, and focused Excel views</h3>
         </div>
-        <span className="badge">{upload ? `${upload.filterViews.length} Excel views` : 'Upload data for more downloads'}</span>
+        <span className="badge">{upload ? `${upload.filterViews.length} filter views | ${upload.analysisOptions.length} analysis paths` : 'Upload data for more downloads'}</span>
       </div>
 
       <div className="export-grid">
@@ -49,8 +49,11 @@ export function ExportsHub({ dashboard, onExportCsv, onExportJson, onExportPdf, 
           </div>
         </article>
         <article className="export-card premium">
-          <div><strong>Analysis workbook</strong><span>Download a compact Excel workbook with metrics, columns, methods, results, filtered views, and recommendations.</span></div>
-          <button className="install-button" disabled={!upload} onClick={() => upload && downloadAnalysisWorkbook(upload)} type="button">Download workbook</button>
+          <div><strong>Complete analysis workbook</strong><span>Download source rows, metrics, business questions, columns, all analytical results, visual series, filter views, signals, recommendations, and every prepared filtered sheet.</span></div>
+          <div className="download-actions compact-actions">
+            <button className="secondary-button" disabled={!upload} onClick={() => upload && downloadAllFilterViewsWorkbook(upload)} type="button">All filter views</button>
+            <button className="install-button" disabled={!upload} onClick={() => upload && downloadAnalysisWorkbook(upload)} type="button">Complete workbook</button>
+          </div>
         </article>
         <article className="export-card premium">
           <div><strong>Dashboard CSV</strong><span>Export the built-in executive analytics as spreadsheet-ready rows.</span></div>

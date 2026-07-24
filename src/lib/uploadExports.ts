@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import type { AdvancedAnalysisResult, UploadAnalysisResponse, UploadFilterView } from '../../shared/analytics';
+import type { AdvancedAnalysisResult, UploadAnalysisOption, UploadAnalysisResponse, UploadFilterView } from '../../shared/analytics';
 import { openPrintablePdfReport } from './printablePdf';
 
 function safeFilePart(value: string) {
@@ -37,6 +37,72 @@ function resultRows(result: AdvancedAnalysisResult) {
   }));
 
   return [...metricRows, ...detailRows];
+}
+
+function appendJsonSheet(workbook: XLSX.WorkBook, rows: Record<string, unknown>[], name: string) {
+  const safeRows = rows.length ? rows : [{ note: 'No records available for this sheet' }];
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(safeRows), safeSheetName(name));
+}
+
+function optionRows(option: UploadAnalysisOption) {
+  return [
+    ...option.fieldStats.map((stat) => ({
+      section: 'field statistic',
+      option: option.title,
+      field: stat.name,
+      total: stat.total,
+      average: stat.average,
+      median: stat.median,
+      min: stat.min,
+      max: stat.max,
+      records: stat.records,
+      missing: stat.missing,
+      zeroCount: stat.zeroCount,
+      outlierCount: stat.outlierCount,
+      shareOfOptionTotal: stat.shareOfOptionTotal,
+    })),
+    ...option.segmentBreakdowns.map((segment) => ({
+      section: 'segment breakdown',
+      option: option.title,
+      segmentField: segment.segmentField,
+      segmentValue: segment.segmentValue,
+      metricField: segment.metricField,
+      total: segment.total,
+      average: segment.average,
+      records: segment.records,
+      share: segment.share,
+    })),
+    ...option.insights.map((insight) => ({
+      section: 'insight',
+      option: option.title,
+      title: insight.title,
+      detail: insight.detail,
+      severity: insight.severity,
+    })),
+    ...option.recommendations.map((recommendation) => ({ section: 'recommendation', option: option.title, recommendation })),
+  ];
+}
+
+export function downloadCustomFilteredWorkbook(fileName: string, rows: Record<string, string>[], summaryRows: Record<string, string | number>[], context: string) {
+  const workbook = XLSX.utils.book_new();
+  appendJsonSheet(workbook, [{ context, exportedRows: rows.length, generatedAt: new Date().toISOString() }], 'Export context');
+  appendJsonSheet(workbook, summaryRows, 'Calculated summary');
+  appendJsonSheet(workbook, rows, 'Filtered ranked rows');
+  XLSX.writeFile(workbook, `${safeFilePart(fileName)}-custom-filtered-analysis.xlsx`);
+}
+
+export function downloadAllFilterViewsWorkbook(analysis: UploadAnalysisResponse) {
+  const workbook = XLSX.utils.book_new();
+  appendJsonSheet(workbook, analysis.filterViews.map((view) => ({
+    title: view.title,
+    rowCount: view.rowCount,
+    matchedBy: view.matchedBy,
+    description: view.description,
+  })), 'View index');
+  for (const view of analysis.filterViews) {
+    appendJsonSheet(workbook, view.rows, view.title);
+  }
+  XLSX.writeFile(workbook, `${safeFilePart(analysis.fileName)}-all-filter-views.xlsx`);
 }
 
 export function downloadUploadAnalysisJson(analysis: UploadAnalysisResponse) {
@@ -162,6 +228,20 @@ export function downloadAnalysisWorkbook(analysis: UploadAnalysisResponse) {
     max: column.max ?? '',
     average: column.average ?? '',
   }));
+  const columnAnalyses = analysis.columnAnalyses.flatMap((column) => [
+    {
+      column: column.name,
+      type: column.type,
+      role: column.role,
+      completeness: column.completeness,
+      unique: column.unique,
+      records: column.records,
+      summary: column.summary,
+      recommendation: column.recommendations.join(' | '),
+    },
+    ...column.parameters.map((parameter) => ({ column: column.name, type: 'parameter', role: parameter.label, completeness: '', unique: '', records: '', summary: parameter.value, recommendation: '' })),
+    ...column.distribution.map((bucket) => ({ column: column.name, type: 'distribution', role: bucket.label, completeness: bucket.share, unique: '', records: bucket.value, summary: `${bucket.share}% share`, recommendation: '' })),
+  ]);
   const methods = analysis.advancedAnalytics.methods.map((method) => ({
     method: method.title,
     enabled: method.enabled ? 'Yes' : 'No',
@@ -170,19 +250,61 @@ export function downloadAnalysisWorkbook(analysis: UploadAnalysisResponse) {
     note: method.disabledReason ?? method.description,
   }));
   const results = analysis.advancedAnalytics.results.flatMap(resultRows);
+  const series = analysis.advancedAnalytics.results.flatMap((result) => result.series.map((point) => ({
+    method: result.title,
+    name: point.name,
+    value: point.value,
+    comparison: point.comparison ?? '',
+    kind: point.kind ?? 'actual',
+  })));
+  const businessQuestions = analysis.businessQuestions.map((question) => ({
+    question: question.question,
+    answer: question.answer,
+    confidence: question.confidence,
+    fields: question.fields.join(', '),
+    evidence: question.evidence.map((item) => `${item.label}: ${item.value}${item.detail ? ` (${item.detail})` : ''}`).join(' | '),
+    recommendation: question.recommendation,
+  }));
+  const analysisOptions = analysis.analysisOptions.flatMap(optionRows);
   const filters = analysis.filterViews.map((view) => ({
     title: view.title,
     rowCount: view.rowCount,
     matchedBy: view.matchedBy,
     description: view.description,
+    columns: view.columns.join(', '),
   }));
+  const signals = [
+    ...analysis.signals.map((signal) => ({ type: 'data signal', title: signal.title, detail: signal.detail, severity: signal.severity, confidence: '', fields: '', parameters: '' })),
+    ...analysis.marketSignals.map((signal) => ({ type: 'market signal', title: signal.title, detail: signal.title, severity: 'info', confidence: signal.confidence, fields: signal.matchedFields.join(', '), parameters: signal.recommendedParameters.join(', ') })),
+  ];
   const recommendations = analysis.recommendations.map((recommendation) => ({ recommendation }));
 
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(metrics), 'Metrics');
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(columns), 'Columns');
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(methods), 'Methods');
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(results), safeSheetName('Analysis results'));
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(filters), safeSheetName('Filtered views'));
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(recommendations), 'Recommendations');
-  XLSX.writeFile(workbook, `${safeFilePart(analysis.fileName)}-analysis-workbook.xlsx`);
+  appendJsonSheet(workbook, [{
+    fileName: analysis.fileName,
+    generatedAt: analysis.generatedAt,
+    rows: analysis.rowCount,
+    columns: analysis.columnCount,
+    qualityScore: analysis.qualityScore,
+    filterViews: analysis.filterViews.length,
+    analysisOptions: analysis.analysisOptions.length,
+    readyMethods: analysis.advancedAnalytics.results.filter((result) => result.status === 'ready').length,
+  }], 'Workbook index');
+  appendJsonSheet(workbook, analysis.analysisRows, 'Source rows');
+  appendJsonSheet(workbook, metrics, 'Metrics');
+  appendJsonSheet(workbook, businessQuestions, 'Business questions');
+  appendJsonSheet(workbook, columns, 'Columns');
+  appendJsonSheet(workbook, columnAnalyses, 'Column analysis');
+  appendJsonSheet(workbook, methods, 'Methods');
+  appendJsonSheet(workbook, results, 'Analysis results');
+  appendJsonSheet(workbook, series, 'Visual series');
+  appendJsonSheet(workbook, analysisOptions, 'Analysis paths');
+  appendJsonSheet(workbook, filters, 'Filtered views');
+  appendJsonSheet(workbook, signals, 'Signals');
+  appendJsonSheet(workbook, recommendations, 'Recommendations');
+
+  for (const view of analysis.filterViews) {
+    appendJsonSheet(workbook, view.rows, `View ${view.title}`);
+  }
+
+  XLSX.writeFile(workbook, `${safeFilePart(analysis.fileName)}-complete-analysis-workbook.xlsx`);
 }

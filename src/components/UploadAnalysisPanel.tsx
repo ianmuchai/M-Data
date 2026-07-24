@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { UploadAnalysisOption, UploadAnalysisResponse, UploadFilterView } from '../../shared/analytics';
 import { analyzeUploadedData } from '../api/uploadAnalysis';
 import { formatTimestamp, numberFormatter } from '../lib/format';
-import { downloadAnalysisWorkbook, downloadFilterViewPdf, downloadFilterViewWorkbook, downloadUploadAnalysisJson, downloadUploadAnalysisPdf } from '../lib/uploadExports';
+import { downloadAnalysisWorkbook, downloadCustomFilteredWorkbook, downloadFilterViewPdf, downloadFilterViewWorkbook, downloadUploadAnalysisJson, downloadUploadAnalysisPdf } from '../lib/uploadExports';
 
 const acceptedTypes =
   '.csv,.tsv,.txt,.json,.xlsx,.xls,.xlsm,.xlsb,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.ms-excel.sheet.binary.macroEnabled.12';
@@ -360,6 +360,28 @@ export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisRes
       <div className="custom-answer-card">
         <strong>{result.answer}</strong>
         <span>{isAdditiveMetric ? `${metric} can be totaled because it behaves like an additive measure.` : `${metric} is treated as a threshold, score, rate, or position field, so BizDATA emphasizes average, min, max, and spread instead of pretending totals are always meaningful.`}</span>
+        <button
+          className="install-button"
+          onClick={() => downloadCustomFilteredWorkbook(
+            analysis.fileName,
+            filteredRows,
+            result.rows.map((row) => ({
+              [dimension]: row.label,
+              displayedValue: row.displayedValue,
+              total: row.total,
+              average: row.average,
+              count: row.count,
+              min: row.min,
+              max: row.max,
+              spread: row.spread,
+              share: row.share,
+            })),
+            `Metric: ${metric}; group by: ${dimension}; mode: ${mode}; filter: ${filterField || 'none'}=${filterValue || 'all'}; search: ${searchTerm || 'none'}; rank: ${rankField} ${rankDirection}`,
+          )}
+          type="button"
+        >
+          Download this filtered analysis
+        </button>
       </div>
 
       <div className="analysis-table-card">

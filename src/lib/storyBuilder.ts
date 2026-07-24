@@ -161,12 +161,35 @@ function riskBullets(upload: UploadAnalysisResponse | null, dashboard: Analytics
   return dashboard?.alerts.map((alert) => `${alert.title}: ${alert.detail}`) ?? ['No alerts available yet.'];
 }
 
+function comprehensiveFindings(upload: UploadAnalysisResponse | null, dashboard: AnalyticsResponse | null) {
+  if (upload) {
+    return [
+      ...upload.businessQuestions.map((question) => `Business answer: ${question.question} ${question.answer} Recommended action: ${question.recommendation}`),
+      ...upload.advancedAnalytics.results.map((result) => `Analytical method: ${result.title}. ${result.summary} ${result.recommendations.join(' ')}`),
+      ...upload.analysisOptions.map((option) => `Analysis path: ${option.title}. ${option.description} ${option.insights.map((insight) => insight.detail).join(' ')}`),
+      ...upload.columnAnalyses.map((column) => `Column finding: ${column.name}. ${column.summary} ${column.recommendations.join(' ')}`),
+      ...upload.filterViews.map((view) => `Filtered spreadsheet view: ${view.title}. ${view.rowCount.toLocaleString('en-US')} records matched by ${view.matchedBy}. ${view.description}`),
+      ...upload.signals.map((signal) => `Signal: ${signal.title}. ${signal.detail}`),
+      ...upload.marketSignals.map((signal) => `Market signal: ${signal.title}. ${signal.confidence}% confidence using ${signal.matchedFields.join(', ') || 'available fields'}.`),
+      ...upload.recommendations.map((recommendation) => `Recommendation: ${recommendation}`),
+    ].filter(Boolean);
+  }
+
+  if (!dashboard) return ['No findings are available yet.'];
+  return [
+    `Dashboard recommendation: ${dashboard.summary.recommendation}`,
+    ...dashboard.alerts.map((alert) => `Dashboard alert: ${alert.title}. ${alert.detail}`),
+    ...dashboard.detailPoints.map((detail) => `Dashboard detail: ${detail.title}. ${detail.value}. ${detail.caption}`),
+  ];
+}
+
 export function buildPresentationDeck({ config, dashboard, upload }: StoryInput): PresentationDeck {
   const preview = buildVisualStoryPreview({ config, dashboard, upload });
   const result = config.source === 'upload' ? primaryResult(upload) : null;
   const results = readyResults(upload);
   const deckTitle = `${sourceTitle(config.source, dashboard, upload)} presentation`;
   const recommendations = upload?.recommendations ?? preview.insights;
+  const findings = comprehensiveFindings(upload, dashboard);
   const enabledMethods = upload?.advancedAnalytics.methods.filter((method) => method.enabled) ?? [];
   const topQuestions = upload?.businessQuestions.slice(0, 5) ?? [];
   const sourceSummary = upload
@@ -186,7 +209,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
       presetIntro(config.preset),
       preview.insights[0] ?? 'BizDATA prepared this presentation from the available analytics.',
       preview.metrics.slice(0, 4),
-      [sourceSummary, ...preview.insights.slice(0, 5)],
+      [sourceSummary, ...findings.slice(0, 5)],
       preview.series.slice(0, 12),
       recommendations.slice(0, 5),
     ),
@@ -213,8 +236,24 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
       recommendations.slice(0, 4),
     ),
     slide(
+      'findings-matrix',
+      '03 / Findings Matrix',
+      'All findings considered in this presentation',
+      `${findings.length.toLocaleString('en-US')} findings were reviewed across business questions, analytics methods, columns, filters, risks, and recommendations.`,
+      'This slide shows that the presentation deck is built from the whole analysis set, including filterable spreadsheets and analytical findings.',
+      [
+        { delta: `${upload?.businessQuestions.length ?? 0} business answers`, label: 'Business findings', sentiment: upload?.businessQuestions.length ? 'positive' : 'neutral', value: String(upload?.businessQuestions.length ?? 0) },
+        { delta: `${results.length} ready results`, label: 'Method findings', sentiment: results.length ? 'positive' : 'warning', value: String(results.length) },
+        { delta: `${upload?.filterViews.length ?? 0} downloadable views`, label: 'Filtered sheets', sentiment: upload?.filterViews.length ? 'positive' : 'neutral', value: String(upload?.filterViews.length ?? 0) },
+        { delta: `${findings.length} total findings`, label: 'Finding pool', sentiment: findings.length ? 'positive' : 'neutral', value: String(findings.length) },
+      ],
+      findings.slice(0, 10),
+      preview.series.slice(0, 12),
+      recommendations.slice(0, 6),
+    ),
+    slide(
       'business-questions',
-      '03 / Business Questions',
+      '04 / Business Questions',
       'The practical questions this dataset answers',
       upload ? `${upload.businessQuestions.length} generated business answers with confidence scoring and evidence.` : 'Dashboard business signals and alerts.',
       'This section turns the raw analysis into management questions, evidence, and action.',
@@ -225,7 +264,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
     slide(
       'methods',
-      '04 / Analytics Coverage',
+      '05 / Analytics Coverage',
       'Methods available and what they contribute',
       results.length ? `${results.length} analytical methods produced ready results.` : 'Available analytical methods are listed with readiness notes.',
       'Use this slide to show that the presentation is based on multiple analytical lenses, not a single chart.',
@@ -236,7 +275,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
     slide(
       'visual-evidence',
-      '05 / Visual Evidence',
+      '06 / Visual Evidence',
       preview.title,
       preview.subtitle,
       'This slide provides the main chart-ready evidence used in the presentation preview.',
@@ -247,7 +286,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
     slide(
       'data-quality',
-      '06 / Data Quality and Fields',
+      '07 / Data Quality and Fields',
       upload ? `${upload.fileName} readiness` : 'Dashboard readiness',
       upload ? `${upload.rowCount.toLocaleString('en-US')} rows, ${upload.columnCount.toLocaleString('en-US')} columns, ${upload.qualityScore}/100 quality score.` : 'Built-in dashboard data is available for reporting.',
       'This slide explains whether the analysis is reliable enough for decisions and which fields matter most.',
@@ -258,7 +297,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
     slide(
       'risk',
-      '07 / Risks and Exceptions',
+      '08 / Risks and Exceptions',
       'Signals that need attention',
       'Data quality, operational, accounting, market, and confidence signals that may affect decisions.',
       'Use this slide to prevent the presentation from hiding uncertainty, exceptions, or follow-up work.',
@@ -269,7 +308,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
     slide(
       'recommendations',
-      '08 / Recommendations',
+      '09 / Recommendations',
       'What to do next',
       'Prioritized actions generated from business questions, analytical methods, data quality, and detected signals.',
       'Use these recommendations to turn the analysis into concrete owners, reviews, and decisions.',
@@ -280,12 +319,12 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
     slide(
       'appendix',
-      '09 / Evidence Appendix',
+      '10 / Evidence Appendix',
       'Supporting tables, filters, and analysis views',
       'A backup slide for users who need the exact analytical surfaces behind the story.',
       'Use this appendix when presenting to analysts, finance teams, operations managers, or anyone who needs traceability.',
       results.flatMap((item) => advancedMetricsToMetrics(item.metrics)).slice(0, 4),
-      appendixBullets.length ? appendixBullets.slice(0, 9) : [...preview.insights, ...recommendations].slice(0, 9),
+      appendixBullets.length ? [...appendixBullets, ...findings].slice(0, 12) : [...findings, ...preview.insights, ...recommendations].slice(0, 12),
       results.flatMap((item) => item.series).slice(0, 12),
       recommendations.slice(0, 6),
     ),
