@@ -98,7 +98,7 @@ function FilterViewDetail({ fileName, filter }: { fileName: string; filter: Uplo
       <CollapsibleTableCard
         badge={`${numberFormatter.format(previewRows.length)} preview rows`}
         eyebrow="Preview"
-        subtitle="Expand only when you need to inspect the records. Downloads stay available above."
+        subtitle="Showing the first four rows. Expand only when you need to inspect more records. Downloads stay available above."
         title="Filtered records ready to view or export"
       >
         <div className="analysis-table-scroll">
@@ -243,6 +243,13 @@ export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisRes
   const metricRole = analysis.columnAnalyses.find((column) => column.name === metric)?.role ?? '';
   const isAdditiveMetric = Boolean(metricProfile && metricProfile.type === 'number' && !/reorder|point|threshold|score|rate|ratio|percent|percentage|age|rank|level/i.test(metricProfile.name + ' ' + metricRole));
   const primaryValueLabel = isAdditiveMetric ? 'Total' : 'Typical value';
+  const dateColumns = analysis.columns.filter((column) => column.type === 'date');
+  const analysisSupportItems = [
+    { label: 'Filter', value: `${dimensionColumns.length} fields`, detail: 'Narrow rows by branch, customer, product, period, owner, status, or category.' },
+    { label: 'Group', value: `${dimensionColumns.length} dimensions`, detail: 'Summarize any metric by the fields that explain the business.' },
+    { label: 'Rank', value: `${numericColumns.length} metrics`, detail: 'Sort highest or lowest records to find priorities, exceptions, and opportunities.' },
+    { label: 'Model', value: dateColumns.length ? 'trends ready' : 'methods ready', detail: dateColumns.length ? 'Use date fields for period movement, forecasts, and changes over time.' : 'Use correlation, regression, spread, and ranking on numeric fields.' },
+  ];
 
   const filteredRows = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -346,6 +353,16 @@ export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisRes
         <span className="badge">{filteredRows.length.toLocaleString('en-US')} rows in view</span>
       </div>
 
+      <div className="analysis-support-strip" aria-label="Analysis toolkit support">
+        {analysisSupportItems.map((item) => (
+          <article key={item.label} data-tooltip={item.detail}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <small>{item.detail}</small>
+          </article>
+        ))}
+      </div>
+
       <div className="custom-analysis-controls spreadsheet-controls">
         <label data-tooltip="A numeric field BizDATA will calculate, compare, or rank. Dates and text are used as groups or filters instead of being summed.">
           <span>Metric</span>
@@ -426,9 +443,8 @@ export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisRes
 
       <CollapsibleTableCard
         badge={`${numberFormatter.format(result.rows.length)} groups`}
-        defaultOpen
         eyebrow="Calculated table"
-        subtitle="Collapse this section after reviewing the grouped result to shorten the Analyze page."
+        subtitle="Showing the first four groups. Expand when you want to inspect the full calculated result."
         title="Calculated summary by selected group"
       >
         <div className="analysis-table-scroll">
@@ -466,7 +482,7 @@ export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisRes
       <CollapsibleTableCard
         badge={`top ${Math.min(filteredRows.length, 12)} rows`}
         eyebrow="Spreadsheet preview"
-        subtitle="Expand to inspect the current filtered and ranked rows without lengthening the full page."
+        subtitle="Showing the first four rows. Expand when you want to inspect the current filtered and ranked records."
         title="Filtered and ranked workbook rows"
       >
         <div className="analysis-table-scroll">
