@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { AdvancedAnalysisMethodKey, AdvancedAnalysisResult, UploadAnalysisResponse } from '../../shared/analytics';
 import { numberFormatter } from '../lib/format';
-import { AnalysisOptionDetail, ColumnAnalysisPanel, CustomAnalysisStudio } from './UploadAnalysisPanel';
+import { downloadAdvancedResultPdf, downloadAdvancedResultWorkbook } from '../lib/uploadExports';
+import { AnalysisOptionDetail, CollapsibleTableCard, ColumnAnalysisPanel, CustomAnalysisStudio } from './UploadAnalysisPanel';
 
 type AnalysisStudioProps = {
   analysis: UploadAnalysisResponse | null;
@@ -46,7 +47,12 @@ function ResultTable({ result }: { result: AdvancedAnalysisResult }) {
   if (!result.rows.length || !columns.length) return null;
 
   return (
-    <div className="analysis-table-card">
+    <CollapsibleTableCard
+      badge={`${numberFormatter.format(Math.min(result.rows.length, 10))} preview rows`}
+      eyebrow="Method spreadsheet"
+      subtitle="Expand to inspect the analytical rows produced by this method."
+      title={`${result.title} result table`}
+    >
       <div className="analysis-table-scroll">
         <table className="analysis-table compact-analysis-table">
           <thead>
@@ -65,7 +71,7 @@ function ResultTable({ result }: { result: AdvancedAnalysisResult }) {
           </tbody>
         </table>
       </div>
-    </div>
+    </CollapsibleTableCard>
   );
 }
 
@@ -188,10 +194,16 @@ export function AnalysisStudio({ analysis, onUploadRequest }: AnalysisStudioProp
 
       {selectedResult ? (
         <div className="analysis-result-panel">
-          <div className="analysis-option-copy">
-            <p className="eyebrow">{selectedResult.status === 'ready' ? 'Ready result' : 'Unavailable'}</p>
-            <h3>{selectedResult.title}</h3>
-            <span>{selectedResult.summary}</span>
+          <div className="analysis-option-copy result-heading-with-actions">
+            <div>
+              <p className="eyebrow">{selectedResult.status === 'ready' ? 'Ready result' : 'Unavailable'}</p>
+              <h3>{selectedResult.title}</h3>
+              <span>{selectedResult.summary}</span>
+            </div>
+            <div className="download-actions compact-actions">
+              <button className="secondary-button" onClick={() => downloadAdvancedResultPdf(analysis.fileName, selectedResult)} type="button">Download PDF</button>
+              <button className="install-button" onClick={() => downloadAdvancedResultWorkbook(analysis.fileName, selectedResult)} type="button">Download Excel</button>
+            </div>
           </div>
 
           <div className="field-pill-row">

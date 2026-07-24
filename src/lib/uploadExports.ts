@@ -91,6 +91,61 @@ export function downloadCustomFilteredWorkbook(fileName: string, rows: Record<st
   XLSX.writeFile(workbook, `${safeFilePart(fileName)}-custom-filtered-analysis.xlsx`);
 }
 
+export function downloadCustomFilteredPdf(fileName: string, rows: Record<string, string>[], summaryRows: Record<string, string | number>[], context: string) {
+  const summaryColumns = Array.from(new Set(summaryRows.flatMap((row) => Object.keys(row)))).slice(0, 10);
+  const rowColumns = Array.from(new Set(rows.flatMap((row) => Object.keys(row)))).slice(0, 10);
+  openPrintablePdfReport({
+    fileName: safeFilePart(fileName) + '-custom-filtered-analysis',
+    generatedAt: new Date().toLocaleString(),
+    subtitle: context,
+    title: 'Custom filtered analysis',
+    sections: [
+      {
+        title: 'Calculated summary',
+        body: 'This PDF captures the active BizDATA spreadsheet analysis builder output for ' + fileName + '.',
+        tables: summaryColumns.length ? [{ title: 'Calculated groups', columns: summaryColumns, rows: summaryRows.map((row) => summaryColumns.map((column) => row[column] ?? '')) }] : [],
+      },
+      {
+        title: 'Filtered ranked rows',
+        body: 'Showing ' + Math.min(rows.length, 80).toLocaleString() + ' of ' + rows.length.toLocaleString() + ' rows in the active filtered view.',
+        tables: rowColumns.length ? [{ title: 'Rows in view', columns: rowColumns, rows: rows.slice(0, 80).map((row) => rowColumns.map((column) => row[column] ?? '')) }] : [],
+      },
+    ],
+  });
+}
+
+export function downloadAdvancedResultWorkbook(fileName: string, result: AdvancedAnalysisResult) {
+  const workbook = XLSX.utils.book_new();
+  appendJsonSheet(workbook, [{ method: result.title, summary: result.summary, status: result.status, ...result.primaryFields }], 'Result summary');
+  appendJsonSheet(workbook, result.metrics.map((metric) => ({ label: metric.label, value: metric.value, rawValue: metric.rawValue ?? '', sentiment: metric.sentiment })), 'Metrics');
+  appendJsonSheet(workbook, resultRows(result), 'Result rows');
+  appendJsonSheet(workbook, result.series.map((point) => ({ name: point.name, value: point.value, comparison: point.comparison ?? '', kind: point.kind ?? 'actual' })), 'Visual series');
+  appendJsonSheet(workbook, result.recommendations.map((recommendation) => ({ recommendation })), 'Recommendations');
+  appendJsonSheet(workbook, result.warnings.map((warning) => ({ warning })), 'Warnings');
+  XLSX.writeFile(workbook, safeFilePart(fileName) + '-' + safeFilePart(result.title) + '-analysis-result.xlsx');
+}
+
+export function downloadAdvancedResultPdf(fileName: string, result: AdvancedAnalysisResult) {
+  const columns = Array.from(new Set(result.rows.flatMap((row) => Object.keys(row.cells)))).slice(0, 8);
+  openPrintablePdfReport({
+    fileName: safeFilePart(fileName) + '-' + safeFilePart(result.title) + '-analysis-result',
+    generatedAt: new Date().toLocaleString(),
+    subtitle: result.summary,
+    title: result.title,
+    sections: [
+      {
+        title: 'Method summary',
+        body: result.summary,
+        cards: result.metrics.map((metric) => ({ label: metric.label, value: metric.value, detail: metric.sentiment })),
+        bullets: result.recommendations.slice(0, 8),
+      },
+      {
+        title: 'Detailed analytical rows',
+        tables: columns.length ? [{ title: 'Result table', columns: ['Item', ...columns], rows: result.rows.slice(0, 80).map((row) => [row.label, ...columns.map((column) => row.cells[column] ?? '')]) }] : [],
+      },
+    ],
+  });
+}
 export function downloadAllFilterViewsWorkbook(analysis: UploadAnalysisResponse) {
   const workbook = XLSX.utils.book_new();
   appendJsonSheet(workbook, analysis.filterViews.map((view) => ({

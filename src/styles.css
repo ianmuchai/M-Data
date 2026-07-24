@@ -4767,3 +4767,123 @@ th button[data-tooltip]:focus-visible::before,
     grid-template-columns: 1fr;
   }
 }
+
+/* BizDATA collapsible spreadsheet panels */
+.collapsible-table-card {
+  overflow: hidden;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 253, 250, 0.82));
+}
+
+.collapsible-table-card.collapsed {
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+.collapsible-table-header {
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 0;
+}
+
+.collapse-toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.collapse-toggle h3,
+.collapse-toggle p,
+.collapse-toggle small {
+  margin: 0;
+}
+
+.collapse-toggle small {
+  display: block;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.collapse-chevron {
+  display: inline-grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid rgba(15, 118, 110, 0.2);
+  border-radius: 999px;
+  background: #0f766e;
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.collapsible-table-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.collapsible-table-body {
+  margin-top: 14px;
+}
+
+.collapsible-table-card.collapsed .collapsible-table-header {
+  padding-bottom: 0;
+}
+
+.result-heading-with-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.result-heading-with-actions > div:first-child {
+  min-width: 0;
+}
+
+.custom-answer-card .download-actions {
+  margin-top: 12px;
+}
+
+@media (max-width: 760px) {
+  .collapsible-table-header,
+  .result-heading-with-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .collapsible-table-tools {
+    justify-content: flex-start;
+  }
+}
+.collapse-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.collapse-title {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 950;
+  line-height: 1.18;
+}
+
+.collapse-eyebrow {
+  display: block;
+}

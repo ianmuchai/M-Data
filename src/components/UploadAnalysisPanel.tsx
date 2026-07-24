@@ -1,14 +1,48 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import type { UploadAnalysisOption, UploadAnalysisResponse, UploadFilterView } from '../../shared/analytics';
 import { analyzeUploadedData } from '../api/uploadAnalysis';
 import { formatTimestamp, numberFormatter } from '../lib/format';
-import { downloadAnalysisWorkbook, downloadCustomFilteredWorkbook, downloadFilterViewPdf, downloadFilterViewWorkbook, downloadUploadAnalysisJson, downloadUploadAnalysisPdf } from '../lib/uploadExports';
+import { downloadAnalysisWorkbook, downloadCustomFilteredPdf, downloadCustomFilteredWorkbook, downloadFilterViewPdf, downloadFilterViewWorkbook, downloadUploadAnalysisJson, downloadUploadAnalysisPdf } from '../lib/uploadExports';
 
 const acceptedTypes =
   '.csv,.tsv,.txt,.json,.xlsx,.xls,.xlsm,.xlsb,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.ms-excel.sheet.binary.macroEnabled.12';
 
 function formatValue(value: number) {
   return numberFormatter.format(Math.round(value));
+}
+
+type CollapsibleTableCardProps = {
+  eyebrow?: string;
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  defaultOpen?: boolean;
+  actions?: ReactNode;
+  children: ReactNode;
+};
+
+export function CollapsibleTableCard({ actions, badge, children, defaultOpen = false, eyebrow = 'Spreadsheet', subtitle, title }: CollapsibleTableCardProps) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className={`analysis-table-card collapsible-table-card ${open ? 'expanded' : 'collapsed'}`}>
+      <div className="panel-header compact collapsible-table-header">
+        <button aria-expanded={open} className="collapse-toggle" onClick={() => setOpen((current) => !current)} type="button">
+          <span className="collapse-chevron" aria-hidden="true">{open ? '−' : '+'}</span>
+          <span className="collapse-copy">
+            <span className="eyebrow collapse-eyebrow">{eyebrow}</span>
+            <strong className="collapse-title">{title}</strong>
+            {subtitle ? <small>{subtitle}</small> : null}
+          </span>
+        </button>
+        <div className="collapsible-table-tools">
+          {badge ? <span className="badge">{badge}</span> : null}
+          {actions}
+        </div>
+      </div>
+      {open ? <div className="collapsible-table-body">{children}</div> : null}
+    </div>
+  );
 }
 
 function FilterViewDetail({ fileName, filter }: { fileName: string; filter: UploadFilterView }) {
@@ -61,13 +95,12 @@ function FilterViewDetail({ fileName, filter }: { fileName: string; filter: Uplo
         <span>{filter.rows.length < filter.rowCount ? `${numberFormatter.format(filter.rows.length)} rows prepared for download` : 'Full filtered set ready'}</span>
       </div>
 
-      <div className="analysis-table-card">
-        <div className="panel-header compact">
-          <div>
-            <p className="eyebrow">Preview</p>
-            <h3>Filtered records ready to view or export</h3>
-          </div>
-        </div>
+      <CollapsibleTableCard
+        badge={`${numberFormatter.format(previewRows.length)} preview rows`}
+        eyebrow="Preview"
+        subtitle="Expand only when you need to inspect the records. Downloads stay available above."
+        title="Filtered records ready to view or export"
+      >
         <div className="analysis-table-scroll">
           <table className="analysis-table filter-preview-table">
             <thead>
@@ -88,7 +121,7 @@ function FilterViewDetail({ fileName, filter }: { fileName: string; filter: Uplo
             </tbody>
           </table>
         </div>
-      </div>
+      </CollapsibleTableCard>
 
       <div className="recommendation-list">
         {filter.recommendations.map((recommendation) => (
@@ -287,6 +320,19 @@ export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisRes
     };
   }, [dimension, filteredRows, isAdditiveMetric, metric, mode]);
 
+  const customSummaryRows = result.rows.map((row) => ({
+    [dimension]: row.label,
+    displayedValue: row.displayedValue,
+    total: row.total,
+    average: row.average,
+    count: row.count,
+    min: row.min,
+    max: row.max,
+    spread: row.spread,
+    share: row.share,
+  }));
+  const customContext = `Metric: ${metric}; group by: ${dimension}; mode: ${mode}; filter: ${filterField || 'none'}=${filterValue || 'all'}; search: ${searchTerm || 'none'}; rank: ${rankField} ${rankDirection}`;
+
   if (!analysis.analysisRows.length || !analysis.columns.length) return null;
 
   return (
@@ -360,31 +406,31 @@ export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisRes
       <div className="custom-answer-card">
         <strong>{result.answer}</strong>
         <span>{isAdditiveMetric ? `${metric} can be totaled because it behaves like an additive measure.` : `${metric} is treated as a threshold, score, rate, or position field, so BizDATA emphasizes average, min, max, and spread instead of pretending totals are always meaningful.`}</span>
-        <button
-          className="install-button"
-          onClick={() => downloadCustomFilteredWorkbook(
-            analysis.fileName,
-            filteredRows,
-            result.rows.map((row) => ({
-              [dimension]: row.label,
-              displayedValue: row.displayedValue,
-              total: row.total,
-              average: row.average,
-              count: row.count,
-              min: row.min,
-              max: row.max,
-              spread: row.spread,
-              share: row.share,
-            })),
-            `Metric: ${metric}; group by: ${dimension}; mode: ${mode}; filter: ${filterField || 'none'}=${filterValue || 'all'}; search: ${searchTerm || 'none'}; rank: ${rankField} ${rankDirection}`,
-          )}
-          type="button"
-        >
-          Download this filtered analysis
-        </button>
+        <div className="download-actions compact-actions">
+          <button
+            className="secondary-button"
+            onClick={() => downloadCustomFilteredPdf(analysis.fileName, filteredRows, customSummaryRows, customContext)}
+            type="button"
+          >
+            Download PDF
+          </button>
+          <button
+            className="install-button"
+            onClick={() => downloadCustomFilteredWorkbook(analysis.fileName, filteredRows, customSummaryRows, customContext)}
+            type="button"
+          >
+            Download Excel
+          </button>
+        </div>
       </div>
 
-      <div className="analysis-table-card">
+      <CollapsibleTableCard
+        badge={`${numberFormatter.format(result.rows.length)} groups`}
+        defaultOpen
+        eyebrow="Calculated table"
+        subtitle="Collapse this section after reviewing the grouped result to shorten the Analyze page."
+        title="Calculated summary by selected group"
+      >
         <div className="analysis-table-scroll">
           <table className="analysis-table">
             <thead>
@@ -415,16 +461,14 @@ export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisRes
             </tbody>
           </table>
         </div>
-      </div>
+      </CollapsibleTableCard>
 
-      <div className="analysis-table-card spreadsheet-preview-card">
-        <div className="panel-header compact">
-          <div>
-            <p className="eyebrow">Spreadsheet preview</p>
-            <h3>Filtered and ranked workbook rows</h3>
-          </div>
-          <span className="badge">top {Math.min(filteredRows.length, 12)} rows</span>
-        </div>
+      <CollapsibleTableCard
+        badge={`top ${Math.min(filteredRows.length, 12)} rows`}
+        eyebrow="Spreadsheet preview"
+        subtitle="Expand to inspect the current filtered and ranked rows without lengthening the full page."
+        title="Filtered and ranked workbook rows"
+      >
         <div className="analysis-table-scroll">
           <table className="analysis-table compact-analysis-table">
             <thead>
@@ -439,7 +483,7 @@ export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisRes
             </tbody>
           </table>
         </div>
-      </div>
+      </CollapsibleTableCard>
     </div>
   );
 }
@@ -755,13 +799,12 @@ export function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption 
       ) : null}
 
       {option.fieldStats.length > 0 ? (
-        <div className="analysis-table-card">
-          <div className="panel-header compact">
-            <div>
-              <p className="eyebrow">Field performance</p>
-              <h3>Totals, averages, medians, ranges, and data quality</h3>
-            </div>
-          </div>
+        <CollapsibleTableCard
+          badge={`${numberFormatter.format(option.fieldStats.length)} fields`}
+          eyebrow="Field performance"
+          subtitle="Expand to inspect totals, averages, medians, ranges, and data quality."
+          title="Totals, averages, medians, ranges, and data quality"
+        >
           <div className="analysis-table-scroll">
             <table className="analysis-table">
               <thead>
@@ -794,17 +837,16 @@ export function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption 
               </tbody>
             </table>
           </div>
-        </div>
+        </CollapsibleTableCard>
       ) : null}
 
       {option.segmentBreakdowns.length > 0 ? (
-        <div className="analysis-table-card">
-          <div className="panel-header compact">
-            <div>
-              <p className="eyebrow">Segment drivers</p>
-              <h3>Where value, volume, risk, or claims are concentrated</h3>
-            </div>
-          </div>
+        <CollapsibleTableCard
+          badge={`${numberFormatter.format(option.segmentBreakdowns.length)} segments`}
+          eyebrow="Segment drivers"
+          subtitle="Expand to see where value, volume, risk, or claims are concentrated."
+          title="Where value, volume, risk, or claims are concentrated"
+        >
           <div className="segment-driver-grid">
             {option.segmentBreakdowns.map((segment) => (
               <article className="segment-driver" key={`${segment.segmentField}-${segment.segmentValue}-${segment.metricField}`}>
@@ -823,7 +865,7 @@ export function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption 
               </article>
             ))}
           </div>
-        </div>
+        </CollapsibleTableCard>
       ) : null}
 
       <div className="analysis-columns" aria-label={`${option.title} detected fields`}>
