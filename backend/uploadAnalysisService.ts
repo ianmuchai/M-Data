@@ -494,16 +494,18 @@ function buildFieldStatistics(rows: DataRow[], columns: ColumnProfile[]): Upload
 }
 
 function segmentValue(row: DataRow, column: ColumnProfile) {
-  const rawValue = row[column.name] || 'Blank';
+  const rawValue = row[column.name];
+  if (!hasMeaningfulValue(rawValue)) return null;
+  const value = stringifyCell(rawValue);
   if (column.type === 'date') {
-    const timestamp = Date.parse(rawValue);
-    return Number.isFinite(timestamp) ? new Date(timestamp).toISOString().slice(0, 7) : 'Invalid date';
+    const timestamp = Date.parse(value);
+    return Number.isFinite(timestamp) ? new Date(timestamp).toISOString().slice(0, 7) : null;
   }
-  return rawValue || 'Blank';
+  return value;
 }
 
 function columnValues(rows: DataRow[], column: ColumnProfile) {
-  return rows.map((row) => row[column.name] ?? '').filter((value) => value.trim() !== '');
+  return rows.map((row) => row[column.name] ?? '').filter(hasMeaningfulValue);
 }
 
 function averageTextLength(values: string[]) {
@@ -565,18 +567,20 @@ function buildSegmentBreakdowns(rows: DataRow[], metricColumns: ColumnProfile[],
 
   for (const segmentColumn of segmentColumns) {
     for (const metricColumn of usableMetricColumns) {
-      const totalForMetric = Math.abs(getNumericValues(rows, metricColumn.name).reduce((sum, value) => sum + value, 0)) || 1;
       const groups = new Map<string, { total: number; records: number }>();
 
       for (const row of rows) {
         const rawMetric = row[metricColumn.name] ?? '';
-        if (!isNumber(rawMetric)) continue;
+        if (!hasMeaningfulValue(rawMetric) || !isNumber(rawMetric)) continue;
         const key = segmentValue(row, segmentColumn);
+        if (!key) continue;
         const current = groups.get(key) ?? { records: 0, total: 0 };
         current.records += 1;
         current.total += toNumber(rawMetric);
         groups.set(key, current);
       }
+
+      const totalForMetric = Array.from(groups.values()).reduce((sum, group) => sum + Math.abs(group.total), 0) || 1;
 
       Array.from(groups.entries())
         .map(([value, group]) => ({
@@ -890,7 +894,7 @@ function buildCategoryValueFilters(rows: DataRow[], columns: ColumnProfile[]) {
     const counts = new Map<string, number>();
     for (const row of rows) {
       const value = segmentValue(row, column);
-      if (!value || value === 'Blank') continue;
+      if (!value) continue;
       counts.set(value, (counts.get(value) ?? 0) + 1);
     }
 

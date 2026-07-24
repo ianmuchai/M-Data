@@ -138,6 +138,11 @@ describe('analyzeRows', () => {
     assert.ok(branchQuestion);
     assert.match(branchQuestion.answer, /Mombasa/);
     assert.doesNotMatch(branchQuestion.answer, /Blank|N\/A/i);
+
+    const segmentValues = result.analysisOptions.flatMap((option) =>
+      option.segmentBreakdowns.map((segment) => segment.segmentValue),
+    );
+    assert.equal(segmentValues.some((value) => /^(blank|n\/a|na|null|undefined|-|)$/i.test(String(value).trim())), false);
   });
   it('uses pricing-specific business language for unit price priority review questions', () => {
     const rows = Array.from({ length: 50 }, (_, index) => ({

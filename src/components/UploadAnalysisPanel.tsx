@@ -788,6 +788,8 @@ function BusinessQuestionsPanel({ analysis }: { analysis: UploadAnalysisResponse
   );
 }
 export function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption }) {
+  const visibleSegmentBreakdowns = option.segmentBreakdowns.filter((segment) => hasMeaningfulCell(segment.segmentValue));
+
   return (
     <div className="analysis-option-detail">
       <div className="analysis-option-copy">
@@ -861,15 +863,15 @@ export function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption 
         </CollapsibleTableCard>
       ) : null}
 
-      {option.segmentBreakdowns.length > 0 ? (
+      {visibleSegmentBreakdowns.length > 0 ? (
         <CollapsibleTableCard
-          badge={`${numberFormatter.format(option.segmentBreakdowns.length)} segments`}
+          badge={`${numberFormatter.format(visibleSegmentBreakdowns.length)} segments`}
           eyebrow="Segment drivers"
-          subtitle="Expand to see where value, volume, risk, or claims are concentrated."
+          subtitle="Blank segment values are ignored; expand to see where value, volume, risk, or claims are concentrated."
           title="Where value, volume, risk, or claims are concentrated"
         >
           <div className="segment-driver-grid">
-            {option.segmentBreakdowns.map((segment) => (
+            {visibleSegmentBreakdowns.map((segment) => (
               <article className="segment-driver" key={`${segment.segmentField}-${segment.segmentValue}-${segment.metricField}`}>
                 <div>
                   <strong>{segment.segmentValue}</strong>
