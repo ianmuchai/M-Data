@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { UploadAnalysisResponse } from '../../shared/analytics';
 import { askExternalChatAgent } from '../api/chatAgent';
 import { numberFormatter } from '../lib/format';
@@ -291,8 +291,13 @@ export function DataAssistant({ analysis, enabled, onUploadRequest }: DataAssist
 
           <div className="assistant-messages">
             {messages.map((message, index) => (
-              <div className={`assistant-message ${message.role}`} key={`${message.role}-${index}`}>
-                {message.text.split('\n').map((line) => <p key={line || index}>{line}</p>)}
+              <div className={`assistant-message-row ${message.role}`} key={`${message.role}-${index}`}>
+                {message.role === 'assistant' ? <span className="assistant-avatar" aria-hidden="true">B</span> : null}
+                <div className={`assistant-message ${message.role}`}>
+                  <span className="message-author">{message.role === 'assistant' ? 'BizDATA Agent' : 'You'}</span>
+                  {message.text.split('\n').map((line, lineIndex) => <p key={`${message.role}-${index}-${lineIndex}`}>{line}</p>)}
+                </div>
+                {message.role === 'user' ? <span className="assistant-avatar user-avatar" aria-hidden="true">Y</span> : null}
               </div>
             ))}
           </div>
