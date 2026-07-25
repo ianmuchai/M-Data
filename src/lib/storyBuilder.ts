@@ -47,6 +47,52 @@ function escapeHtml(value: string | number | undefined) {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+const placeholderLabelPattern = /^(blank|\(blank\)|\[blank\]|\{blank\}|<blank>|#n\/a|n\/a|na|n\.a\.|null|undefined|nan|-|--|none|missing|not applicable|not available|not provided|not specified|unknown)$/i;
+const placeholderFindingPattern = /(^|[\s:;,.])(?:blank|\(blank\)|\[blank\]|#n\/a|n\/a|na|null|undefined|nan|-|--|none|missing|not applicable|not available|not provided|not specified|unknown)\s+(?:is|has|leads|generates|carries|needs|may|averages|records|contributes|represents|creates|should|with|:)/i;
+
+function isPlaceholderLabel(value: unknown) {
+  return placeholderLabelPattern.test(String(value ?? '').trim()) || !businessValueOrNull(value);
+}
+
+function containsPlaceholderFinding(value: unknown) {
+  const text = String(value ?? '').trim();
+  return placeholderFindingPattern.test(text);
+}
+
+function cleanTextItems(items: string[]) {
+  return items.filter((item) => item.trim() && !containsPlaceholderFinding(item));
+}
+
+function cleanMetrics(metrics: Metric[]) {
+  return metrics.filter((metric) => !isPlaceholderLabel(metric.label) && !isPlaceholderLabel(metric.value) && !containsPlaceholderFinding(`${metric.label}: ${metric.value} ${metric.delta ?? ''}`));
+}
+
+function cleanSeries(points: AdvancedAnalysisSeriesPoint[]) {
+  return points.filter((point) => !isPlaceholderLabel(point.name));
+}
+
+function cleanRows(rows: AdvancedAnalysisRow[]) {
+  return rows.filter((row) => !isPlaceholderLabel(row.label) && !containsPlaceholderFinding(row.label));
+}
+
+function cleanBusinessQuestions(upload: UploadAnalysisResponse | null) {
+  return upload?.businessQuestions.filter((question) => {
+    if (containsPlaceholderFinding(question.answer) || containsPlaceholderFinding(question.recommendation)) return false;
+    return question.evidence.every((item) => !isPlaceholderLabel(item.label) && !containsPlaceholderFinding(`${item.label}: ${item.value} ${item.detail ?? ''}`));
+  }) ?? [];
+}
+
+function cleanSlide(slide: PresentationSlide): PresentationSlide {
+  return {
+    ...slide,
+    bullets: cleanTextItems(slide.bullets),
+    metrics: cleanMetrics(slide.metrics),
+    recommendations: cleanTextItems(slide.recommendations),
+    visualPoints: cleanSeries(slide.visualPoints),
+  };
+}
+
+
 function sourceTitle(source: VisualStorySource, dashboard: AnalyticsResponse | null, upload: UploadAnalysisResponse | null) {
   if (source === 'upload' && upload) return upload.fileName;
   return dashboard ? 'Executive dashboard' : 'BizDATA report';
@@ -83,14 +129,14 @@ function uploadSeries(upload: UploadAnalysisResponse | null, metric: string, dim
 function uploadRows(upload: UploadAnalysisResponse | null): AdvancedAnalysisRow[] {
   if (!upload) return [];
   const resultRows = readyResults(upload).flatMap((result) => result.rows.slice(0, 6));
-  if (resultRows.length) return resultRows.slice(0, 12);
-  return upload.columns.slice(0, 12).map((column) => ({ label: column.name, cells: { type: column.type, missing: column.missing, unique: column.unique } }));
+  if (resultRows.length) return cleanRows(resultRows).slice(0, 12);
+  return cleanRows(upload.columns.slice(0, 12).map((column) => ({ label: column.name, cells: { type: column.type, missing: column.missing, unique: column.unique } }))); 
 }
 
 function uploadInsights(upload: UploadAnalysisResponse | null) {
   if (!upload) return [];
   return [
-    ...upload.businessQuestions.slice(0, 6).map((question) => `${question.question} ${question.answer}`),
+    ...cleanBusinessQuestions(upload).slice(0, 6).map((question) => `${question.question} ${question.answer}`),
     ...readyResults(upload).slice(0, 4).map((result) => `${result.title}: ${result.summary}`),
     ...upload.recommendations.slice(0, 6),
   ].filter(Boolean).slice(0, 12);
@@ -101,20 +147,20 @@ export function buildVisualStoryPreview({ config, dashboard, upload }: StoryInpu
     const result = primaryResult(upload);
     const series = uploadSeries(upload, config.metric, config.dimension);
     return {
-      insights: uploadInsights(upload),
-      metrics: upload.metrics,
-      rows: uploadRows(upload),
-      series: series.length ? series : result?.series.slice(0, 12) ?? [],
-      subtitle: `${config.preset} ${config.visualType} using ${config.metric} by ${config.dimension}. Includes business questions, methods, columns, risks, and recommendations.`,
+      insights: cleanTextItems(uploadInsights(upload)),
+      metrics: cleanMetrics(upload.metrics),
+      rows: cleanRows(uploadRows(upload)),
+      series: cleanSeries(series.length ? series : result?.series.slice(0, 12) ?? []),
+      subtitle: `${config.preset} ${config.visualType} using ${config.metric} by ${config.dimension}. Includes clean business questions, methods, columns, risks, and recommendations.`,
       title: `${upload.fileName} analytics story`,
     };
   }
 
   return {
     insights: dashboard ? [dashboard.summary.recommendation, ...dashboard.alerts.map((alert) => alert.detail), ...dashboard.detailPoints.map((detail) => detail.caption)].slice(0, 10) : ['Dashboard data is still loading.'],
-    metrics: dashboard?.metrics ?? [],
-    rows: dashboard?.breakdown.map((row) => ({ label: row.name, cells: { conversion: row.conversion, latency: row.latency, revenue: row.revenue, users: row.users } })) ?? [],
-    series: dashboard?.trend.map((point) => ({ comparison: point.target, kind: 'actual', name: point.name, value: point.value })) ?? [],
+    metrics: cleanMetrics(dashboard?.metrics ?? []),
+    rows: cleanRows(dashboard?.breakdown.map((row) => ({ label: row.name, cells: { conversion: row.conversion, latency: row.latency, revenue: row.revenue, users: row.users } })) ?? []),
+    series: cleanSeries(dashboard?.trend.map((point) => ({ comparison: point.target, kind: 'actual', name: point.name, value: point.value })) ?? []),
     subtitle: `${config.preset} ${config.visualType} view using ${config.metric} by ${config.dimension}.`,
     title: 'Executive dashboard visual story',
   };
@@ -191,8 +237,9 @@ function methodBullets(upload: UploadAnalysisResponse | null) {
 }
 
 function businessQuestionBullets(upload: UploadAnalysisResponse | null) {
-  if (!upload?.businessQuestions.length) return ['No uploaded business questions are available yet.'];
-  return upload.businessQuestions.slice(0, 14).map((question) => `${question.question} Answer: ${question.answer} Recommendation: ${question.recommendation}`);
+  const questions = cleanBusinessQuestions(upload);
+  if (!questions.length) return ['No clean uploaded business questions are available yet. Re-run the upload analysis after cleaning placeholder labels.'];
+  return questions.slice(0, 14).map((question) => `${question.question} Answer: ${question.answer} Recommendation: ${question.recommendation}`);
 }
 
 function columnBullets(upload: UploadAnalysisResponse | null) {
@@ -212,8 +259,8 @@ function riskBullets(upload: UploadAnalysisResponse | null, dashboard: Analytics
 
 function comprehensiveFindings(upload: UploadAnalysisResponse | null, dashboard: AnalyticsResponse | null) {
   if (upload) {
-    return [
-      ...upload.businessQuestions.map((question) => `Business answer: ${question.question} ${question.answer} Recommended action: ${question.recommendation}`),
+    return cleanTextItems([
+      ...cleanBusinessQuestions(upload).map((question) => `Business answer: ${question.question} ${question.answer} Recommended action: ${question.recommendation}`),
       ...upload.advancedAnalytics.results.map((result) => `Analytical method: ${result.title}. ${result.summary} ${result.recommendations.join(' ')}`),
       ...upload.analysisOptions.map((option) => `Analysis path: ${option.title}. ${option.description} ${option.insights.map((insight) => insight.detail).join(' ')}`),
       ...upload.columnAnalyses.map((column) => `Column finding: ${column.name}. ${column.summary} ${column.recommendations.join(' ')}`),
@@ -221,15 +268,15 @@ function comprehensiveFindings(upload: UploadAnalysisResponse | null, dashboard:
       ...upload.signals.map((signal) => `Signal: ${signal.title}. ${signal.detail}`),
       ...upload.marketSignals.map((signal) => `Market signal: ${signal.title}. ${signal.confidence}% confidence using ${signal.matchedFields.join(', ') || 'available fields'}.`),
       ...upload.recommendations.map((recommendation) => `Recommendation: ${recommendation}`),
-    ].filter(Boolean);
+    ].filter(Boolean));
   }
 
   if (!dashboard) return ['No findings are available yet.'];
-  return [
+  return cleanTextItems([
     `Dashboard recommendation: ${dashboard.summary.recommendation}`,
     ...dashboard.alerts.map((alert) => `Dashboard alert: ${alert.title}. ${alert.detail}`),
     ...dashboard.detailPoints.map((detail) => `Dashboard detail: ${detail.title}. ${detail.value}. ${detail.caption}`),
-  ];
+  ]);
 }
 function executiveSummaryContent(input: {
   dashboard: AnalyticsResponse | null;
@@ -254,7 +301,7 @@ function executiveSummaryContent(input: {
   ].filter(Boolean).slice(0, 8);
 
   const narrative = upload
-    ? `BizDATA reviewed ${findings.length.toLocaleString('en-US')} findings across ${upload.rowCount.toLocaleString('en-US')} records, ${upload.columnCount.toLocaleString('en-US')} fields, ${upload.businessQuestions.length.toLocaleString('en-US')} business questions, ${results.length.toLocaleString('en-US')} analytical results, and ${upload.filterViews.length.toLocaleString('en-US')} downloadable filter views. The summary below highlights what leadership should understand first, what evidence supports it, and what action should follow.`
+    ? `BizDATA reviewed ${findings.length.toLocaleString('en-US')} findings across ${upload.rowCount.toLocaleString('en-US')} records, ${upload.columnCount.toLocaleString('en-US')} fields, ${cleanBusinessQuestions(upload).length.toLocaleString('en-US')} clean business questions, ${results.length.toLocaleString('en-US')} analytical results, and ${upload.filterViews.length.toLocaleString('en-US')} downloadable filter views. The summary below highlights what leadership should understand first, what evidence supports it, and what action should follow.`
     : `BizDATA reviewed the available dashboard performance signals and summarized the clearest decision points, risks, and next actions for the selected reporting view.`;
 
   const metrics: Metric[] = upload
@@ -277,7 +324,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
   const recommendations = upload?.recommendations ?? preview.insights;
   const findings = comprehensiveFindings(upload, dashboard);
   const enabledMethods = upload?.advancedAnalytics.methods.filter((method) => method.enabled) ?? [];
-  const topQuestions = upload?.businessQuestions.slice(0, 12) ?? [];
+  const topQuestions = cleanBusinessQuestions(upload).slice(0, 12);
   const sourceSummary = upload
     ? `${upload.rowCount.toLocaleString('en-US')} records, ${upload.columnCount.toLocaleString('en-US')} fields, ${upload.qualityScore}/100 quality score.`
     : dashboard ? `Dashboard score ${dashboard.summary.score}/100 with target ${dashboard.summary.target}.` : 'BizDATA generated this deck from the available workspace context.';
@@ -326,10 +373,10 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
       'findings-matrix',
       '03 / Findings Matrix',
       'Evidence considered behind the brief',
-      `${findings.length.toLocaleString('en-US')} findings were reviewed across business questions, analytics methods, columns, filters, risks, and recommendations.`,
+      `${findings.length.toLocaleString('en-US')} findings were reviewed across clean business questions, analytics methods, columns, filters, risks, and recommendations.`,
       'This supporting slide is only used when the audience needs traceability into the analysis pool.',
       [
-        { delta: `${upload?.businessQuestions.length ?? 0} business answers`, label: 'Business findings', sentiment: upload?.businessQuestions.length ? 'positive' : 'neutral', value: String(upload?.businessQuestions.length ?? 0) },
+        { delta: `${topQuestions.length} clean business answers`, label: 'Business findings', sentiment: topQuestions.length ? 'positive' : 'neutral', value: String(topQuestions.length) },
         { delta: `${results.length} ready results`, label: 'Method findings', sentiment: results.length ? 'positive' : 'warning', value: String(results.length) },
         { delta: `${upload?.filterViews.length ?? 0} downloadable views`, label: 'Filtered sheets', sentiment: upload?.filterViews.length ? 'positive' : 'neutral', value: String(upload?.filterViews.length ?? 0) },
         { delta: `${findings.length} total findings`, label: 'Finding pool', sentiment: findings.length ? 'positive' : 'neutral', value: String(findings.length) },
@@ -342,9 +389,9 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
       'business-questions',
       '04 / Business Questions',
       'The practical questions this dataset answers',
-      upload ? `${upload.businessQuestions.length} generated business answers with confidence scoring and evidence.` : 'Dashboard business signals and alerts.',
+      upload ? `${topQuestions.length} clean generated business answers with confidence scoring and evidence.` : 'Dashboard business signals and alerts.',
       'This section turns the raw analysis into management questions, evidence, and action.',
-      upload?.businessQuestions.slice(0, 6).map((question) => ({ delta: `${question.confidence}% confidence`, label: question.question.slice(0, 42), sentiment: 'positive', value: question.evidence[0]?.value ?? 'review' })) ?? preview.metrics.slice(0, 4),
+      topQuestions.length ? topQuestions.slice(0, 6).map((question) => ({ delta: `${question.confidence}% confidence`, label: question.question.slice(0, 42), sentiment: 'positive', value: question.evidence[0]?.value ?? 'review' })) : preview.metrics.slice(0, 4),
       businessQuestionBullets(upload),
       preview.series.slice(0, 12),
       recommendations.slice(0, 5),
@@ -397,7 +444,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
       'recommendations',
       '09 / Recommendations',
       'What to do next',
-      'Prioritized actions generated from business questions, analytical methods, data quality, and detected signals.',
+      'Prioritized actions generated from clean business questions, analytical methods, data quality, and detected signals.',
       'Use these recommendations to turn the analysis into concrete owners, reviews, and decisions.',
       [],
       recommendations.slice(0, 9),
@@ -417,7 +464,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
   ];
 
-  const slides = audienceSlideOrder(config.preset, baseSlides);
+  const slides = audienceSlideOrder(config.preset, baseSlides).map(cleanSlide);
 
   return {
     generatedAt: new Date().toISOString(),
