@@ -5266,3 +5266,199 @@ th button[data-tooltip]:focus-visible::before,
     grid-template-columns: 1fr;
   }
 }
+/* Mobile app polish and Analyze card fit fixes */
+.analysis-studio,
+.analysis-result-panel,
+.column-analysis-card,
+.business-question-card,
+.custom-answer-card,
+.method-group,
+.compact-card {
+  min-width: 0;
+}
+
+.field-pill-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.field-pill-row span {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.field-pill-row b {
+  min-width: 0;
+  margin-right: 0;
+  color: #1e40af;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.column-analysis-card .question-evidence {
+  grid-template-columns: repeat(auto-fit, minmax(min(142px, 100%), 1fr));
+}
+
+.column-analysis-card .question-evidence span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.column-analysis-card .question-evidence b {
+  white-space: normal;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    width: 100%;
+    padding: 18px 14px 34px;
+  }
+
+  .topbar {
+    position: sticky;
+    z-index: 30;
+    top: 8px;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+    border-color: rgba(15, 118, 110, 0.12);
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .topbar,
+  .panel-header,
+  .control-bar {
+    flex-direction: column;
+  }
+
+  .topbar-actions,
+  .panel-header,
+  .control-bar {
+    align-items: stretch;
+  }
+
+  .topbar-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .topbar-actions button,
+  .topbar-actions .secondary-button,
+  .topbar-actions .cta-button,
+  .topbar-actions .app-download-button {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    justify-content: center;
+    padding-inline: 10px;
+    font-size: 0.76rem;
+  }
+
+  .analysis-command-center,
+  .metrics-grid,
+  .column-analysis-grid,
+  .clickable-question-grid,
+  .custom-analysis-controls,
+  .spreadsheet-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-result-panel,
+  .column-analysis-card,
+  .custom-answer-card,
+  .collapsible-table-card,
+  .method-group {
+    border-radius: 8px;
+    padding: 13px;
+  }
+
+  .method-grid,
+  .compact-analysis-paths .analysis-option-grid,
+  .compact-option-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .method-grid button,
+  .compact-option-grid button,
+  .compact-analysis-paths .analysis-option-grid button {
+    min-height: 54px;
+    padding: 9px;
+  }
+
+  .method-grid span,
+  .compact-option-grid span,
+  .compact-analysis-paths .analysis-option-grid span {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 520px) {
+  body {
+    background:
+      linear-gradient(180deg, #f8fffd 0%, #f4f7fb 46%, #fff7ed 100%);
+  }
+
+  [data-tooltip]::after,
+  [data-tooltip]::before {
+    display: none;
+  }
+
+  .app-shell {
+    padding: 12px 10px 28px;
+  }
+
+  .topbar-actions,
+  .method-grid,
+  .compact-analysis-paths .analysis-option-grid,
+  .compact-option-grid,
+  .field-pill-row,
+  .column-analysis-card .question-evidence {
+    grid-template-columns: 1fr;
+  }
+
+  .business-question-heading {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .business-question-heading span {
+    justify-self: start;
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .field-pill-row span {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    padding: 8px 9px;
+  }
+
+  .analysis-table-scroll,
+  .collapsible-table-card {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  h2 {
+    font-size: 1.35rem;
+  }
+
+  h3 {
+    font-size: 1rem;
+  }
+}
