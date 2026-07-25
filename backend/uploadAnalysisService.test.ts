@@ -144,6 +144,32 @@ describe('analyzeRows', () => {
     );
     assert.equal(segmentValues.some((value) => /^(blank|n\/a|na|null|undefined|-|)$/i.test(String(value).trim())), false);
   });
+  it('excludes blank-like cells across column distributions, filters, and business question evidence', () => {
+    const result = analyzeRows('messy-business-values.xlsx', [
+      { Branch: '', Product: '', Revenue: 999999, StockOnHand: 2, ReorderPoint: 8, UnitsSold: 1 },
+      { Branch: 'N/A', Product: 'N/A', Revenue: 888888, StockOnHand: 3, ReorderPoint: 7, UnitsSold: 1 },
+      { Branch: '-', Product: '-', Revenue: 777777, StockOnHand: 4, ReorderPoint: 9, UnitsSold: 1 },
+      { Branch: 'Nairobi', Product: 'Sugar', Revenue: 1200, StockOnHand: 6, ReorderPoint: 10, UnitsSold: 20 },
+      { Branch: 'Mombasa', Product: 'Rice', Revenue: 2500, StockOnHand: 40, ReorderPoint: 20, UnitsSold: 18 },
+      { Branch: 'Mombasa', Product: 'Rice', Revenue: 2700, StockOnHand: 45, ReorderPoint: 20, UnitsSold: 16 },
+    ]);
+
+    const blankLike = /^(blank|n\/a|na|null|undefined|-|--|none|not applicable|unnamed item|item|record \d+|)$/i;
+    const labels = [
+      ...result.columnAnalyses.flatMap((column) => column.distribution.map((bucket) => bucket.label)),
+      ...result.filterViews.flatMap((view) => [view.title, view.matchedBy]),
+      ...result.businessQuestions.flatMap((question) => [
+        ...question.evidence.map((item) => item.label),
+        question.answer,
+        question.recommendation,
+      ]),
+      ...result.analysisOptions.flatMap((option) => option.segmentBreakdowns.map((segment) => segment.segmentValue)),
+    ];
+
+    assert.equal(labels.some((label) => blankLike.test(String(label).trim())), false);
+    assert.equal(result.columnAnalyses.find((column) => column.name === 'Branch')?.distribution.some((bucket) => bucket.label === 'Mombasa'), true);
+    assert.equal(result.businessQuestions.find((question) => question.key === 'top-branch-revenue')?.answer.includes('Mombasa'), true);
+  });
   it('uses pricing-specific business language for unit price priority review questions', () => {
     const rows = Array.from({ length: 50 }, (_, index) => ({
       Product: `Item ${index + 1}`,

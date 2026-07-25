@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { hasBusinessValue as hasMeaningfulValue, stringifyCell } from '../shared/valueGuards';
+import { businessValueOrNull, hasBusinessValue as hasMeaningfulValue, stringifyCell } from '../shared/valueGuards';
 import type {
   ColumnProfile,
   Metric,
@@ -139,7 +139,7 @@ function isDate(value: string) {
 }
 
 function inferType(values: string[]): ColumnProfile['type'] {
-  const filled = values.filter(Boolean);
+  const filled = values.filter(hasMeaningfulValue);
   if (filled.length === 0) return 'text';
 
   const numericRatio = filled.filter(isNumber).length / filled.length;
@@ -157,7 +157,7 @@ function profileColumns(rows: DataRow[]): ColumnProfile[] {
 
   return headers.map((name) => {
     const values = rows.map((row) => row[name] ?? '');
-    const filled = values.filter((value) => value.trim() !== '');
+    const filled = values.filter(hasMeaningfulValue);
     const type = inferType(values);
     const profile: ColumnProfile = {
       missing: values.length - filled.length,
@@ -213,7 +213,7 @@ function percentile(values: number[], ratio: number) {
 }
 
 function getNumericValues(rows: DataRow[], columnName: string) {
-  return rows.map((row) => row[columnName] ?? '').filter(isNumber).map(toNumber);
+  return rows.map((row) => row[columnName] ?? '').filter((value) => hasMeaningfulValue(value) && isNumber(value)).map(toNumber);
 }
 
 const marketTemplates = [
@@ -1024,7 +1024,7 @@ function buildColumnAnalyses(rows: DataRow[], columns: ColumnProfile[], roleInsi
 
   return columns.map((column) => {
     const values = rows.map((row) => row[column.name] ?? '');
-    const filled = values.filter((value) => value.trim() !== '');
+    const filled = values.filter(hasMeaningfulValue);
     const completeness = round((filled.length / Math.max(values.length, 1)) * 100);
     const role = roleByColumn.get(column.name) ?? 'descriptive_attribute';
     const parameters: Array<{ label: string; value: string }> = [
@@ -1239,12 +1239,12 @@ function buildBusinessQuestions(rows: DataRow[], columns: ColumnProfile[]): Uplo
         const reorder = toNumber(reorderRaw);
         return {
           gap: reorder - stock,
-          label: productColumn ? row[productColumn.name] || 'Unnamed item' : row[stockColumn.name] || 'Item',
+          label: productColumn ? businessValueOrNull(row[productColumn.name]) : businessValueOrNull(row[stockColumn.name]),
           reorder,
           stock,
         };
       })
-      .filter((row): row is { gap: number; label: string; reorder: number; stock: number } => row !== null && row.gap >= 0)
+      .filter((row): row is { gap: number; label: string; reorder: number; stock: number } => row !== null && row.gap >= 0 && Boolean(row.label))
       .sort((a, b) => b.gap - a.gap);
 
     if (reorderRows.length > 0) {
@@ -1349,7 +1349,8 @@ function buildBusinessQuestions(rows: DataRow[], columns: ColumnProfile[]): Uplo
         const expense = toNumber(expenseRaw);
         const budget = toNumber(budgetRaw);
         const variance = expense - budget;
-        const label = accountDimension ? row[accountDimension.name] || `Record ${index + 1}` : `Record ${index + 1}`;
+        const label = accountDimension ? businessValueOrNull(row[accountDimension.name]) : `Record ${index + 1}`;
+        if (!label) return null;
         return { budget, expense, label, variance };
       })
       .filter((row): row is { budget: number; expense: number; label: string; variance: number } => row !== null && Math.abs(row.variance) > 0)
@@ -1413,7 +1414,9 @@ function buildBusinessQuestions(rows: DataRow[], columns: ColumnProfile[]): Uplo
         if (!isNumber(stockRaw) || !isNumber(soldRaw)) return null;
         const stock = toNumber(stockRaw);
         const sold = Math.max(toNumber(soldRaw), 1);
-        return { label: row[productColumn.name] || 'Unnamed item', ratio: stock / sold, sold, stock };
+        const label = businessValueOrNull(row[productColumn.name]);
+        if (!label) return null;
+        return { label, ratio: stock / sold, sold, stock };
       })
       .filter((row): row is { label: string; ratio: number; sold: number; stock: number } => row !== null)
       .sort((a, b) => b.ratio - a.ratio);
