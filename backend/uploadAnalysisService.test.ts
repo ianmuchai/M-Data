@@ -146,15 +146,15 @@ describe('analyzeRows', () => {
   });
   it('excludes blank-like cells across column distributions, filters, and business question evidence', () => {
     const result = analyzeRows('messy-business-values.xlsx', [
-      { Branch: '', Product: '', Revenue: 999999, StockOnHand: 2, ReorderPoint: 8, UnitsSold: 1 },
-      { Branch: 'N/A', Product: 'N/A', Revenue: 888888, StockOnHand: 3, ReorderPoint: 7, UnitsSold: 1 },
-      { Branch: '-', Product: '-', Revenue: 777777, StockOnHand: 4, ReorderPoint: 9, UnitsSold: 1 },
-      { Branch: 'Nairobi', Product: 'Sugar', Revenue: 1200, StockOnHand: 6, ReorderPoint: 10, UnitsSold: 20 },
-      { Branch: 'Mombasa', Product: 'Rice', Revenue: 2500, StockOnHand: 40, ReorderPoint: 20, UnitsSold: 18 },
-      { Branch: 'Mombasa', Product: 'Rice', Revenue: 2700, StockOnHand: 45, ReorderPoint: 20, UnitsSold: 16 },
+      { Branch: '', Product: '', PaymentMethod: 'Blank', Revenue: 999999, OrderSize: 999999, StockOnHand: 2, ReorderPoint: 8, UnitsSold: 1 },
+      { Branch: 'N/A', Product: 'N/A', PaymentMethod: '(Blank)', Revenue: 888888, OrderSize: 888888, StockOnHand: 3, ReorderPoint: 7, UnitsSold: 1 },
+      { Branch: '-', Product: '-', PaymentMethod: '#N/A', Revenue: 777777, OrderSize: 777777, StockOnHand: 4, ReorderPoint: 9, UnitsSold: 1 },
+      { Branch: 'Nairobi', Product: 'Sugar', PaymentMethod: 'Cash', Revenue: 1200, OrderSize: 1200, StockOnHand: 6, ReorderPoint: 10, UnitsSold: 20 },
+      { Branch: 'Mombasa', Product: 'Rice', PaymentMethod: 'Distributor', Revenue: 2500, OrderSize: 2500, StockOnHand: 40, ReorderPoint: 20, UnitsSold: 18 },
+      { Branch: 'Mombasa', Product: 'Rice', PaymentMethod: 'Distributor', Revenue: 2700, OrderSize: 2700, StockOnHand: 45, ReorderPoint: 20, UnitsSold: 16 },
     ]);
 
-    const blankLike = /^(blank|n\/a|na|null|undefined|-|--|none|not applicable|unnamed item|item|record \d+|)$/i;
+    const blankLike = /^(blank|\(blank\)|\[blank\]|#n\/a|n\/a|na|null|undefined|-|--|none|missing|not applicable|not available|not provided|not specified|unknown|unnamed item|item|record \d+|)$/i;
     const labels = [
       ...result.columnAnalyses.flatMap((column) => column.distribution.map((bucket) => bucket.label)),
       ...result.filterViews.flatMap((view) => [view.title, view.matchedBy]),
@@ -169,6 +169,11 @@ describe('analyzeRows', () => {
     assert.equal(labels.some((label) => blankLike.test(String(label).trim())), false);
     assert.equal(result.columnAnalyses.find((column) => column.name === 'Branch')?.distribution.some((bucket) => bucket.label === 'Mombasa'), true);
     assert.equal(result.businessQuestions.find((question) => question.key === 'top-branch-revenue')?.answer.includes('Mombasa'), true);
+    const paymentQuestion = result.businessQuestions.find((question) => question.key === 'payment-method-order-size');
+    assert.ok(paymentQuestion);
+    assert.match(paymentQuestion.answer, /Distributor|Cash/);
+    assert.doesNotMatch(paymentQuestion.answer, /Blank|#N\/A|N\/A|unknown|not available/i);
+    assert.equal(paymentQuestion.evidence.some((item) => blankLike.test(String(item.label).trim())), false);
   });
   it('uses pricing-specific business language for unit price priority review questions', () => {
     const rows = Array.from({ length: 50 }, (_, index) => ({

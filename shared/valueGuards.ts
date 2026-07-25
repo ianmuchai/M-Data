@@ -1,4 +1,27 @@
-const missingBusinessLabels = new Set(['', 'blank', 'n/a', 'na', 'null', 'undefined', '-', '--', 'none', 'not applicable']);
+const missingBusinessLabels = new Set([
+  '',
+  'blank',
+  '(blank)',
+  '[blank]',
+  '{blank}',
+  '<blank>',
+  'n/a',
+  '#n/a',
+  'na',
+  'n.a.',
+  'null',
+  'undefined',
+  'nan',
+  '-',
+  '--',
+  'none',
+  'missing',
+  'not applicable',
+  'not available',
+  'not provided',
+  'not specified',
+  'unknown',
+]);
 
 export function stringifyCell(value: unknown): string {
   if (value == null) return '';
@@ -6,8 +29,19 @@ export function stringifyCell(value: unknown): string {
   return String(value).trim();
 }
 
+function normalizeBusinessLabel(value: unknown): string {
+  return stringifyCell(value)
+    .toLowerCase()
+    .replace(/[\u00a0\s]+/g, ' ')
+    .trim();
+}
+
 export function isMissingBusinessValue(value: unknown): boolean {
-  return missingBusinessLabels.has(stringifyCell(value).toLowerCase());
+  const normalized = normalizeBusinessLabel(value);
+  if (missingBusinessLabels.has(normalized)) return true;
+
+  const unwrapped = normalized.replace(/^[([{<]+\s*/, '').replace(/\s*[\])}>]+$/, '').trim();
+  return missingBusinessLabels.has(unwrapped);
 }
 
 export function hasBusinessValue(value: unknown): boolean {
