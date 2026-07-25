@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { hasBusinessValue as hasMeaningfulValue, stringifyCell } from '../shared/valueGuards';
 import type {
   ColumnProfile,
   Metric,
@@ -28,17 +29,6 @@ const unitHints = ['unit', 'units', 'quantity', 'qty', 'volume', 'sold'];
 const stockHints = ['stock', 'inventory', 'on hand', 'on_hand', 'available', 'qty', 'quantity', 'reorder', 'minimum stock', 'min stock', 'restock'];
 const categoryHints = ['category', 'department', 'segment', 'class', 'type', 'collection', 'division', 'family'];
 const nonCategoryHints = ['id', 'sku', 'code', 'number', 'email', 'phone', 'address', 'name', 'description', 'comment', 'note', 'reference', 'transaction'];
-
-function stringifyCell(value: unknown) {
-  if (value == null) return '';
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  return String(value).trim();
-}
-
-function hasMeaningfulValue(value: unknown) {
-  const normalized = stringifyCell(value).toLowerCase();
-  return normalized !== '' && !['blank', 'null', 'undefined', 'n/a', 'na', 'none', '-', '--'].includes(normalized);
-}
 
 function parseDelimitedLine(line: string, delimiter: string) {
   const cells: string[] = [];
@@ -98,7 +88,7 @@ function normalizeSheetRows(rows: unknown[][]): DataRow[] {
   const headers = headerRow.map((header, index) => stringifyCell(header) || `column_${index + 1}`);
 
   return bodyRows
-    .map((row) => Object.fromEntries(headers.map((header, index) => [header, stringifyCell(row[index])])) )
+    .map((row): DataRow => Object.fromEntries(headers.map((header, index) => [header, stringifyCell(row[index])])))
     .filter((row) => Object.values(row).some((value) => value.trim() !== ''));
 }
 
@@ -1091,7 +1081,10 @@ function buildColumnAnalyses(rows: DataRow[], columns: ColumnProfile[], roleInsi
       recommendations.push(`Use ${column.name} as the time axis for week-over-week and month-over-month analysis.`);
     } else {
       const counts = new Map<string, number>();
-      for (const value of filled) counts.set(value || 'Blank', (counts.get(value || 'Blank') ?? 0) + 1);
+      for (const value of filled) {
+        if (!hasMeaningfulValue(value)) continue;
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+      }
       distribution = Array.from(counts.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 8)

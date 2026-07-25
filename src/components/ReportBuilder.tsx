@@ -121,8 +121,8 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
       <div className="panel-header story-header">
         <div>
           <p className="eyebrow">Visual Story Builder</p>
-          <h3>Comprehensive presentation from all available analytics</h3>
-          <span className="panel-subtitle">BizDATA now combines dashboard metrics, uploaded workbook findings, business questions, model outputs, column quality, and recommendations into one downloadable story.</span>
+          <h3>Board-ready presentation from the full analysis</h3>
+          <span className="panel-subtitle">BizDATA turns the dashboard, workbook findings, business questions, charts, risks, and recommendations into a clear slide deck.</span>
         </div>
         <div className="download-actions">
           <button className="secondary-button" onClick={() => downloadPresentationPdf(deck)} type="button">Download PDF</button>
@@ -132,7 +132,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
 
       <div className="story-builder-grid comprehensive-story-grid">
         <aside className="builder-controls story-controls" aria-label="Visual story controls">
-          <div className="builder-helper"><strong>Shape the story</strong><span>{selectedVisual.helper} {selectedPreset.helper}</span></div>
+          <div className="builder-helper"><strong>Choose how the presentation should speak</strong><span>{selectedVisual.helper} {selectedPreset.helper}</span></div>
           <label>
             <span>Data source</span>
             <select value={config.source} onChange={(event) => update('source', event.target.value as VisualStoryConfig['source'])}>

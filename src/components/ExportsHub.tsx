@@ -35,40 +35,40 @@ export function ExportsHub({ dashboard, onExportCsv, onExportJson, onExportPdf, 
       <div className="panel-header">
         <div>
           <p className="eyebrow">Downloads Hub</p>
-          <h3>Download dashboard files, analyzed summaries, workbooks, and focused Excel views</h3>
+          <h3>Download clean summaries, workbooks, dashboards, and filtered sheets</h3>
         </div>
         <span className="badge">{upload ? `${upload.filterViews.length} filter views | ${upload.analysisOptions.length} analysis paths` : 'Upload data for more downloads'}</span>
       </div>
 
       <div className="export-grid">
         <article className="export-card premium">
-          <div><strong>Analyzed summary</strong><span>Download the latest uploaded dataset profile, methods, recommendations, and results as JSON or PDF.</span></div>
+          <div><strong>Analysis summary</strong><span>Download the latest workbook profile, plain-language findings, methods, recommendations, and results as JSON or PDF.</span></div>
           <div className="download-actions compact-actions">
             <button className="secondary-button" disabled={!upload} onClick={() => upload && downloadUploadAnalysisJson(upload)} type="button">Export JSON</button>
             <button className="install-button" disabled={!upload} onClick={() => upload && downloadUploadAnalysisPdf(upload)} type="button">Export PDF</button>
           </div>
         </article>
         <article className="export-card premium">
-          <div><strong>Complete analysis workbook</strong><span>Download source rows, metrics, business questions, columns, all analytical results, visual series, filter views, signals, recommendations, and every prepared filtered sheet.</span></div>
+          <div><strong>Complete workbook</strong><span>Download the source rows, metrics, business questions, column notes, analytical results, chart data, filter views, signals, recommendations, and prepared sheets.</span></div>
           <div className="download-actions compact-actions">
             <button className="secondary-button" disabled={!upload} onClick={() => upload && downloadAllFilterViewsWorkbook(upload)} type="button">All filter views</button>
             <button className="install-button" disabled={!upload} onClick={() => upload && downloadAnalysisWorkbook(upload)} type="button">Complete workbook</button>
           </div>
         </article>
         <article className="export-card premium">
-          <div><strong>Dashboard CSV</strong><span>Export the built-in executive analytics as spreadsheet-ready rows.</span></div>
+          <div><strong>Dashboard spreadsheet</strong><span>Export the executive dashboard data as spreadsheet-ready rows.</span></div>
           <button className="secondary-button" disabled={!dashboard} onClick={onExportCsv} type="button">Export CSV</button>
         </article>
         <article className="export-card premium">
-          <div><strong>Dashboard JSON / PDF</strong><span>Export metrics, trend, alerts, and breakdown data for integrations or PDF reporting.</span></div>
+          <div><strong>Dashboard report</strong><span>Export metrics, trends, alerts, and segment data for integrations or PDF reporting.</span></div>
           <div className="download-actions compact-actions">
             <button className="secondary-button" disabled={!dashboard} onClick={onExportJson} type="button">Export JSON</button>
             <button className="install-button" disabled={!dashboard} onClick={onExportPdf} type="button">Export PDF</button>
           </div>
         </article>
         <article className="export-card premium">
-          <div><strong>Report setup</strong><span>Download the current starter report configuration as JSON.</span></div>
-          <button className="secondary-button" onClick={() => downloadJson('m-data-report-config.json', reportConfig)} type="button">Export setup</button>
+          <div><strong>Report settings</strong><span>Download the current report setup as JSON for reuse or handoff.</span></div>
+          <button className="secondary-button" onClick={() => downloadJson('bizdata-report-config.json', reportConfig)} type="button">Export setup</button>
         </article>
       </div>
 

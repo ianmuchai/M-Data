@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import type { UploadAnalysisOption, UploadAnalysisResponse, UploadFilterView } from '../../shared/analytics';
+import { hasBusinessValue } from '../../shared/valueGuards';
 import { analyzeUploadedData } from '../api/uploadAnalysis';
 import { formatTimestamp, numberFormatter } from '../lib/format';
 import { downloadAnalysisWorkbook, downloadCustomFilteredPdf, downloadCustomFilteredWorkbook, downloadFilterViewPdf, downloadFilterViewWorkbook, downloadUploadAnalysisJson, downloadUploadAnalysisPdf } from '../lib/uploadExports';
@@ -12,8 +13,7 @@ function formatValue(value: number) {
 }
 
 function hasMeaningfulCell(value: unknown) {
-  const normalized = String(value ?? '').trim().toLowerCase();
-  return normalized !== '' && !['blank', 'null', 'undefined', 'n/a', 'na', 'none', '-', '--'].includes(normalized);
+  return hasBusinessValue(value);
 }
 
 type CollapsibleTableCardProps = {
@@ -286,7 +286,8 @@ export function CustomAnalysisStudio({ analysis }: { analysis: UploadAnalysisRes
 
     const groups = new Map<string, number[]>();
     for (const row of filteredRows) {
-      const key = row[dimension] || 'Blank';
+      const key = hasMeaningfulCell(row[dimension]) ? row[dimension] : null;
+      if (!key) continue;
       const values = groups.get(key) ?? [];
       if (mode === 'count') {
         values.push(1);
@@ -793,7 +794,7 @@ export function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption 
   return (
     <div className="analysis-option-detail">
       <div className="analysis-option-copy">
-        <p className="eyebrow">Focused analysis</p>
+        <p className="eyebrow">What this analysis shows</p>
         <h3>{option.title}</h3>
         <span>{option.description}</span>
       </div>
@@ -867,8 +868,8 @@ export function AnalysisOptionDetail({ option }: { option: UploadAnalysisOption 
         <CollapsibleTableCard
           badge={`${numberFormatter.format(visibleSegmentBreakdowns.length)} segments`}
           eyebrow="Segment drivers"
-          subtitle="Blank segment values are ignored; expand to see where value, volume, risk, or claims are concentrated."
-          title="Where value, volume, risk, or claims are concentrated"
+          subtitle="Missing segment names are ignored, so this shows only real groups. Expand to see where value, volume, risk, or claims are concentrated."
+          title="Real business groups driving the result"
         >
           <div className="segment-driver-grid">
             {visibleSegmentBreakdowns.map((segment) => (
@@ -1000,8 +1001,8 @@ export function UploadAnalysisPanel({ analysis: providedAnalysis = null, onAnaly
 
       <div className="upload-guidance" aria-label="What happens after upload">
         <article><strong>1. Understand</strong><span>Column types, missing values, business roles, and market signals are detected.</span></article>
-        <article><strong>2. Analyze</strong><span>Compatible methods such as regression, trends, segmentation, and anomalies are prepared.</span></article>
-        <article><strong>3. Download</strong><span>Export filtered Excel views, analyzed summaries, and compact workbooks.</span></article>
+        <article><strong>2. Analyze</strong><span>BizDATA prepares the methods that fit your workbook, including regression, trends, segments, and exceptions.</span></article>
+        <article><strong>3. Download</strong><span>Download filtered sheets, PDF summaries, and analysis workbooks when you are ready to share.</span></article>
       </div>
 
       {error ? <div className="upload-error">{error}</div> : null}

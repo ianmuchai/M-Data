@@ -1,3 +1,4 @@
+import { businessValueOrNull } from '../shared/valueGuards';
 import type {
   AdvancedAnalysisMethod,
   AdvancedAnalysisMethodKey,
@@ -297,9 +298,9 @@ function segmentation(rows: DataRow[], columns: ColumnProfile[], numericColumns:
   if (!segment || !target) return baseResult('segmentation', 'unavailable', 'Segmentation needs one category field and one numeric metric.');
   const groups = new Map<string, { count: number; total: number }>();
   for (const row of rows) {
-    const key = (row[segment.name] || 'Blank').slice(0, 80);
+    const key = businessValueOrNull(row[segment.name])?.slice(0, 80);
     const value = cleanNumber(row[target.name]);
-    if (value == null) continue;
+    if (!key || value == null) continue;
     const group = groups.get(key) ?? { count: 0, total: 0 };
     group.count += 1;
     group.total += value;
@@ -369,8 +370,8 @@ function ranking(rows: DataRow[], columns: ColumnProfile[], numericColumns: Nume
   const groups = new Map<string, number>();
   for (const row of rows) {
     const value = cleanNumber(row[target.name]);
-    if (value == null) continue;
-    const key = (row[dimension.name] || 'Blank').slice(0, 80);
+    const key = businessValueOrNull(row[dimension.name])?.slice(0, 80);
+    if (!key || value == null) continue;
     groups.set(key, (groups.get(key) ?? 0) + value);
   }
   const total = Array.from(groups.values()).reduce((sum, value) => sum + value, 0) || 1;

@@ -1,3 +1,4 @@
+import { businessValueOrNull } from '../../shared/valueGuards';
 import { openPrintablePdfReport } from './printablePdf';
 import type {
   AdvancedAnalysisRow,
@@ -66,9 +67,9 @@ function uploadSeries(upload: UploadAnalysisResponse | null, metric: string, dim
 
   const groups = new Map<string, number>();
   for (const row of upload.analysisRows) {
-    const label = row[dimensionColumn.name] || 'Blank';
+    const label = businessValueOrNull(row[dimensionColumn.name]);
     const value = Number(String(row[metricColumn.name] ?? '').replace(/[$,%\s]/g, ''));
-    if (!Number.isFinite(value)) continue;
+    if (!label || !Number.isFinite(value)) continue;
     groups.set(label, (groups.get(label) ?? 0) + value);
   }
 
@@ -264,9 +265,9 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
         { delta: `${recommendations.length} actions`, label: 'Next steps', sentiment: recommendations.length ? 'positive' : 'neutral', value: String(recommendations.length) },
       ],
       [
-        'Executive summary: what matters most and why.',
+        'Executive summary: the clearest decision story from the findings.',
         'Business questions: practical answers in plain language.',
-        'Analytics coverage: regression, correlation, trends, ranking, forecasting, and other ready methods.',
+        'Analytics coverage: the strongest methods BizDATA found for this workbook.',
         'Visual evidence: chart-ready movement, comparison, and ranking data.',
         'Risk and recommendations: what to review, decide, assign, or export.',
       ],
@@ -377,14 +378,6 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     title: deckTitle,
   };
 }
-export function downloadStoryConfig(config: VisualStoryConfig) {
-  downloadBlob('bizdata-visual-story-config.json', JSON.stringify(config, null, 2), 'application/json');
-}
-
-export function downloadPresentationOutline(deck: PresentationDeck) {
-  downloadBlob(`${safeName(deck.title)}-outline.json`, JSON.stringify(deck, null, 2), 'application/json');
-}
-
 export function downloadPresentationPdf(deck: PresentationDeck) {
   openPrintablePdfReport({
     fileName: `${safeName(deck.title)}-presentation`,

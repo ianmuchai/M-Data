@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { UploadAnalysisResponse } from '../../shared/analytics';
+import { businessValueOrNull } from '../../shared/valueGuards';
 import { askExternalChatAgent } from '../api/chatAgent';
 import { numberFormatter } from '../lib/format';
 
@@ -125,7 +126,7 @@ function answerMetricCalculation(question: string, analysis: UploadAnalysisRespo
   if (/(highest|maximum|top|largest|best)/.test(normalizedQuestion)) return `The highest ${metric.name} is ${formatNumber(max)}. Review top records for opportunity, risk, pricing pressure, operational exceptions, or data-entry issues depending on this field.`;
   if (/(lowest|minimum|bottom|smallest|worst)/.test(normalizedQuestion)) return `The lowest ${metric.name} is ${formatNumber(min)}. Low records can point to underperformance, weak activity, stock gaps, small orders, or incomplete data.`;
 
-  return `${metric.name} summary: total ${formatNumber(total)}, average ${formatNumber(average)}, median ${formatNumber(median)}, min ${formatNumber(min)}, max ${formatNumber(max)}, records ${formatNumber(values.length)}.`;
+  return `Here is the ${metric.name} picture: total ${formatNumber(total)}, average ${formatNumber(average)}, median ${formatNumber(median)}, lowest ${formatNumber(min)}, highest ${formatNumber(max)}, across ${formatNumber(values.length)} usable records.`;
 }
 
 function answerGroupedQuestion(question: string, analysis: UploadAnalysisResponse) {
@@ -140,9 +141,9 @@ function answerGroupedQuestion(question: string, analysis: UploadAnalysisRespons
 
   const groups = new Map<string, number[]>();
   for (const row of analysis.analysisRows) {
-    const key = row[dimension.name] || 'Blank';
+    const key = businessValueOrNull(row[dimension.name]);
     const value = parseNumber(row[metric.name]);
-    if (value == null) continue;
+    if (!key || value == null) continue;
     groups.set(key, [...(groups.get(key) ?? []), value]);
   }
 
@@ -247,7 +248,7 @@ export function DataAssistant({ analysis, enabled, onUploadRequest }: DataAssist
   const [thinking, setThinking] = useState(false);
   const [agentMode, setAgentMode] = useState<'external' | 'local'>('local');
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', text: 'Hi, I am the BizDATA agent. Ask naturally: "what is going on?", "what should I do?", "which groups are best?", or "explain the risks."' },
+    { role: 'assistant', text: 'Hi, I am the BizDATA agent. Ask me like a colleague: "what is happening?", "what should we review first?", "which groups are strongest?", or "explain the risks."' },
   ]);
 
   const quickPrompts = useMemo(() => [
@@ -314,7 +315,7 @@ export function DataAssistant({ analysis, enabled, onUploadRequest }: DataAssist
           </div>
 
           <form className="assistant-input" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
-            <input onChange={(event) => setInput(event.target.value)} placeholder={analysis ? 'Ask naturally about the workbook, risks, trends, groups, or next actions' : 'Upload data first or ask what I can do'} value={input} />
+            <input onChange={(event) => setInput(event.target.value)} placeholder={analysis ? 'Ask about the workbook, risks, trends, groups, or next actions' : 'Upload data first or ask what I can do'} value={input} />
             <button disabled={thinking} type="submit">{thinking ? 'Thinking' : 'Ask'}</button>
           </form>
 

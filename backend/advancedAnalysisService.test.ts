@@ -74,4 +74,22 @@ describe('buildAdvancedAnalytics', () => {
     assert.ok(methods.has('what-if'));
     assert.ok(result.results.find((item) => item.method === 'forecasting')?.series.some((point) => point.kind === 'forecast'));
   });
+  it('does not treat blank segment or ranking labels as real analytical groups', () => {
+    const messyRows = [
+      { date: '2026-01-01', region: '', sales: '999', units: '2', risk: '1' },
+      { date: '2026-01-02', region: 'N/A', sales: '888', units: '4', risk: '1' },
+      { date: '2026-01-03', region: '-', sales: '777', units: '6', risk: '2' },
+      { date: '2026-01-04', region: 'North', sales: '100', units: '8', risk: '2' },
+      { date: '2026-01-05', region: 'South', sales: '200', units: '10', risk: '3' },
+    ];
+    const result = buildAdvancedAnalytics(messyRows, columns);
+    const labels = result.results.flatMap((item) => [
+      ...item.rows.map((row) => row.label),
+      ...item.series.map((point) => point.name),
+    ]);
+
+    assert.equal(labels.some((label) => /^(blank|n\/a|na|null|undefined|-|)$/i.test(String(label).trim())), false);
+    assert.ok(labels.includes('North'));
+    assert.ok(labels.includes('South'));
+  });
 });
