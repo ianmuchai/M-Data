@@ -4,10 +4,8 @@ import type { AnalyticsResponse, PresentationPreset, UploadAnalysisResponse, Vis
 import {
   buildPresentationDeck,
   buildVisualStoryPreview,
-  downloadPresentationHtml,
-  downloadPresentationOutline,
   downloadPresentationPdf,
-  downloadStoryConfig,
+  downloadPresentationPpt,
 } from '../lib/storyBuilder';
 
 type ReportBuilderProps = {
@@ -127,10 +125,8 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
           <span className="panel-subtitle">BizDATA now combines dashboard metrics, uploaded workbook findings, business questions, model outputs, column quality, and recommendations into one downloadable story.</span>
         </div>
         <div className="download-actions">
-          <button className="secondary-button" onClick={() => downloadStoryConfig(config)} type="button">Export config</button>
-          <button className="secondary-button" onClick={() => downloadPresentationOutline(deck)} type="button">Export outline</button>
-          <button className="secondary-button" onClick={() => downloadPresentationPdf(deck)} type="button">Export PDF</button>
-          <button className="install-button" onClick={() => downloadPresentationHtml(deck)} type="button">Export HTML</button>
+          <button className="secondary-button" onClick={() => downloadPresentationPdf(deck)} type="button">Download PDF</button>
+          <button className="install-button" onClick={() => downloadPresentationPpt(deck)} type="button">Download PPT</button>
         </div>
       </div>
 
