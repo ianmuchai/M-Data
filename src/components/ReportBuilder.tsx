@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { AnalyticsResponse, PresentationPreset, UploadAnalysisResponse, VisualStoryConfig, VisualStoryType } from '../../shared/analytics';
 import {
@@ -35,7 +35,11 @@ type SlideChartKind = 'bar' | 'line' | 'pie';
 
 const slidePalette = ['#0f766e', '#2563eb', '#f97316', '#7c3aed', '#14b8a6', '#e11d48', '#f59e0b', '#64748b'];
 
-function chooseSlideChartKind(slideId: string, slideIndex: number, hasComparison: boolean, pointCount: number): SlideChartKind {
+function chooseSlideChartKind(slideId: string, slideIndex: number, hasComparison: boolean, pointCount: number, preset: PresentationPreset, visualType: VisualStoryType): SlideChartKind {
+  if (visualType === 'line' || visualType === 'area') return 'line';
+  if (visualType === 'bar' || visualType === 'ranking' || visualType === 'comparison') return 'bar';
+  if (preset === 'board' || (preset === 'executive' && slideId.includes('summary'))) return 'pie';
+  if (preset === 'analyst' || preset === 'operations') return 'bar';
   if (slideId.includes('trend') || slideId.includes('visual') || hasComparison) return 'line';
   if (slideId.includes('summary') || slideId.includes('quality') || (pointCount > 1 && pointCount <= 6 && slideIndex % 3 === 0)) return 'pie';
   return 'bar';
@@ -107,13 +111,18 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
   const selectedSlide = deck.slides.find((slide) => slide.id === selectedSlideId) ?? deck.slides[0];
   const selectedSlideIndex = Math.max(0, deck.slides.findIndex((slide) => slide.id === selectedSlide.id));
   const selectedSlideChartData = useMemo(() => selectedSlide.visualPoints.slice(0, 12).map((point) => ({ name: point.name, value: point.value, comparison: point.comparison ?? undefined })), [selectedSlide]);
-  const selectedSlideChartKind = useMemo(() => chooseSlideChartKind(selectedSlide.id, selectedSlideIndex, selectedSlideChartData.some((point) => typeof point.comparison === 'number'), selectedSlideChartData.length), [selectedSlide.id, selectedSlideIndex, selectedSlideChartData]);
+  const selectedSlideChartKind = useMemo(() => chooseSlideChartKind(selectedSlide.id, selectedSlideIndex, selectedSlideChartData.some((point) => typeof point.comparison === 'number'), selectedSlideChartData.length, config.preset, config.visualType), [config.preset, config.visualType, selectedSlide.id, selectedSlideIndex, selectedSlideChartData]);
   const chartData = useMemo(() => preview.series.slice(0, 12).map((point) => ({ name: point.name, value: point.value, comparison: point.comparison ?? undefined })), [preview.series]);
   const selectedVisual = visualTypeOptions.find((option) => option.key === config.visualType) ?? visualTypeOptions[0];
   const selectedPreset = presetOptions.find((option) => option.key === config.preset) ?? presetOptions[0];
 
+  useEffect(() => {
+    if (!deck.slides.some((slide) => slide.id === selectedSlideId)) setSelectedSlideId(deck.slides[0]?.id ?? 'summary');
+  }, [deck.slides, selectedSlideId]);
+
   const update = <K extends keyof VisualStoryConfig>(key: K, value: VisualStoryConfig[K]) => {
     setConfig((current) => ({ ...current, [key]: value }));
+    if (key === 'preset') setSelectedSlideId('summary');
   };
 
   return (
@@ -132,7 +141,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
 
       <div className="story-builder-grid comprehensive-story-grid">
         <aside className="builder-controls story-controls" aria-label="Visual story controls">
-          <div className="builder-helper"><strong>Choose how the presentation should speak</strong><span>{selectedVisual.helper} {selectedPreset.helper}</span></div>
+          <div className="builder-helper audience-helper"><strong>{selectedPreset.label}</strong><span>{selectedPreset.helper} The slide order, chart emphasis, and exported deck update when this changes.</span></div>
           <label>
             <span>Data source</span>
             <select value={config.source} onChange={(event) => update('source', event.target.value as VisualStoryConfig['source'])}>
@@ -253,7 +262,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
                 <h3>{deck.title}</h3>
                 <span>{deck.subtitle}</span>
               </div>
-              <span className="badge">{deck.slides.length} slides</span>
+              <span className="badge">{selectedPreset.key} audience | {deck.slides.length} slides</span>
             </div>
 
             <div className="slide-tabs" aria-label="Presentation slides">
@@ -292,7 +301,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
                 {selectedSlideChartData.length ? (
                   <div className={['slide-evidence-chart', selectedSlideChartKind].join(' ')} aria-label='Selected slide visual evidence'>
                     <div className='slide-chart-title'>
-                      <strong>{selectedSlideChartKind === 'pie' ? 'Share of visual evidence' : selectedSlideChartKind === 'bar' ? 'Ranked analytics evidence' : 'Trend and comparison evidence'}</strong>
+                      <strong>{selectedPreset.key === 'board' ? 'Risk and share evidence' : selectedPreset.key === 'operations' ? 'Operational priority evidence' : selectedPreset.key === 'analyst' ? 'Detailed analytical evidence' : selectedSlideChartKind === 'pie' ? 'Share of visual evidence' : selectedSlideChartKind === 'bar' ? 'Ranked analytics evidence' : 'Trend and comparison evidence'}</strong>
                       <span>{selectedSlideChartData.length} chartable findings from this slide</span>
                     </div>
                     <SlideEvidenceChart data={selectedSlideChartData} kind={selectedSlideChartKind} />

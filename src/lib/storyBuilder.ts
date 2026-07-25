@@ -138,6 +138,53 @@ function presetIntro(preset: PresentationPreset) {
   return copy[preset];
 }
 
+
+function audienceSummaryTitle(preset: PresentationPreset) {
+  const titles: Record<PresentationPreset, string> = {
+    analyst: 'Analyst evidence summary',
+    board: 'Board performance and risk summary',
+    executive: 'Executive decision summary',
+    operations: 'Operations action summary',
+  };
+  return titles[preset];
+}
+
+function audiencePriorities(preset: PresentationPreset) {
+  const priorities: Record<PresentationPreset, string[]> = {
+    analyst: [
+      'Evidence quality, assumptions, and method coverage.',
+      'Field behavior, outliers, and confidence signals.',
+      'Traceable supporting tables for deeper validation.',
+    ],
+    board: [
+      'Performance movement, strategic risk, and confidence.',
+      'Material exceptions that may affect decisions.',
+      'Clear recommendation, ownership, and governance follow-up.',
+    ],
+    executive: [
+      'What changed, why it matters, and what to decide.',
+      'The highest-value opportunities and risks.',
+      'Actions that can be assigned immediately.',
+    ],
+    operations: [
+      'Bottlenecks, exceptions, owners, and next work queues.',
+      'Segments that need operational follow-up.',
+      'Practical actions for stock, service, workload, delays, or process gaps.',
+    ],
+  };
+  return priorities[preset];
+}
+
+function audienceSlideOrder(preset: PresentationPreset, slides: PresentationSlide[]) {
+  const order: Record<PresentationPreset, string[]> = {
+    analyst: ['summary', 'methods', 'findings-matrix', 'visual-evidence', 'data-quality', 'business-questions', 'risk', 'recommendations', 'agenda', 'appendix'],
+    board: ['summary', 'risk', 'recommendations', 'visual-evidence', 'business-questions', 'findings-matrix', 'data-quality', 'methods', 'agenda', 'appendix'],
+    executive: ['summary', 'business-questions', 'visual-evidence', 'recommendations', 'risk', 'findings-matrix', 'methods', 'data-quality', 'agenda', 'appendix'],
+    operations: ['summary', 'risk', 'recommendations', 'business-questions', 'visual-evidence', 'data-quality', 'findings-matrix', 'methods', 'agenda', 'appendix'],
+  };
+  const byId = new Map(slides.map((item) => [item.id, item]));
+  return order[preset].map((id) => byId.get(id)).filter((item): item is PresentationSlide => Boolean(item));
+}
 function methodBullets(upload: UploadAnalysisResponse | null) {
   if (!upload) return ['No uploaded workbook methods available yet.'];
   return upload.advancedAnalytics.methods.map((method) => `${method.title}: ${method.enabled ? `ready using ${method.suggestedFields.join(', ') || 'available fields'}` : method.disabledReason}`).slice(0, 9);
@@ -241,15 +288,15 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ...(dashboard?.detailPoints.slice(0, 4).map((detail) => `${detail.title}: ${detail.value} - ${detail.caption}`) ?? []),
   ];
 
-  const slides: PresentationSlide[] = [
+  const baseSlides: PresentationSlide[] = [
     slide(
       'summary',
       '01 / Executive Summary',
-      'Executive summary of findings',
+      audienceSummaryTitle(config.preset),
       sourceSummary,
       executive.narrative,
       executive.metrics,
-      executive.bullets,
+      [...audiencePriorities(config.preset), ...executive.bullets].slice(0, 8),
       preview.series.slice(0, 12),
       [executive.recommendation, ...recommendations].slice(0, 5),
     ),
@@ -373,9 +420,9 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
   return {
     generatedAt: new Date().toISOString(),
     preset: config.preset,
-    slides,
+    slides: audienceSlideOrder(config.preset, baseSlides),
     source: config.source,
-    subtitle: `${config.narrativeStyle} narrative with ${config.theme} theme | ${slides.length} PowerPoint-style slides | built from all available analytics`,
+    subtitle: `${config.preset} audience | ${config.narrativeStyle} narrative with ${config.theme} theme | ${baseSlides.length} PowerPoint-style slides | built from all available analytics`,
     title: deckTitle,
   };
 }
