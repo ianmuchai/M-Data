@@ -177,10 +177,10 @@ function audiencePriorities(preset: PresentationPreset) {
 
 function audienceSlideOrder(preset: PresentationPreset, slides: PresentationSlide[]) {
   const order: Record<PresentationPreset, string[]> = {
-    analyst: ['summary', 'methods', 'findings-matrix', 'visual-evidence', 'data-quality', 'business-questions', 'risk', 'recommendations', 'agenda', 'appendix'],
-    board: ['summary', 'risk', 'recommendations', 'visual-evidence', 'business-questions', 'findings-matrix', 'data-quality', 'methods', 'agenda', 'appendix'],
-    executive: ['summary', 'business-questions', 'visual-evidence', 'recommendations', 'risk', 'findings-matrix', 'methods', 'data-quality', 'agenda', 'appendix'],
-    operations: ['summary', 'risk', 'recommendations', 'business-questions', 'visual-evidence', 'data-quality', 'findings-matrix', 'methods', 'agenda', 'appendix'],
+    analyst: ['summary', 'business-questions', 'methods', 'visual-evidence', 'data-quality', 'risk', 'recommendations', 'appendix'],
+    board: ['summary', 'risk', 'recommendations', 'visual-evidence', 'business-questions', 'data-quality'],
+    executive: ['summary', 'business-questions', 'visual-evidence', 'risk', 'recommendations'],
+    operations: ['summary', 'risk', 'recommendations', 'business-questions', 'visual-evidence', 'data-quality'],
   };
   const byId = new Map(slides.map((item) => [item.id, item]));
   return order[preset].map((id) => byId.get(id)).filter((item): item is PresentationSlide => Boolean(item));
@@ -303,9 +303,9 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     slide(
       'agenda',
       '02 / Presentation Roadmap',
-      'How to read this analysis deck',
+      'Optional navigation notes',
       `${config.preset} audience, ${config.narrativeStyle} explanation depth, ${config.visualType} primary visual style.`,
-      'This deck is structured like a decision presentation: context first, then evidence, risks, and recommended action.',
+      'This optional slide is kept for analyst-style reviews. Management briefs skip it so decision makers start with the findings.',
       [
         { delta: `${preview.metrics.length} KPI cards`, label: 'KPI coverage', sentiment: 'positive', value: String(preview.metrics.length) },
         { delta: `${topQuestions.length} priority answers`, label: 'Business questions', sentiment: topQuestions.length ? 'positive' : 'neutral', value: String(topQuestions.length) },
@@ -325,9 +325,9 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     slide(
       'findings-matrix',
       '03 / Findings Matrix',
-      'All findings considered in this presentation',
+      'Evidence considered behind the brief',
       `${findings.length.toLocaleString('en-US')} findings were reviewed across business questions, analytics methods, columns, filters, risks, and recommendations.`,
-      'This slide shows that the presentation deck is built from the whole analysis set, including filterable spreadsheets and analytical findings.',
+      'This supporting slide is only used when the audience needs traceability into the analysis pool.',
       [
         { delta: `${upload?.businessQuestions.length ?? 0} business answers`, label: 'Business findings', sentiment: upload?.businessQuestions.length ? 'positive' : 'neutral', value: String(upload?.businessQuestions.length ?? 0) },
         { delta: `${results.length} ready results`, label: 'Method findings', sentiment: results.length ? 'positive' : 'warning', value: String(results.length) },
@@ -354,7 +354,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
       '05 / Analytics Coverage',
       'Methods available and what they contribute',
       results.length ? `${results.length} analytical methods produced ready results.` : 'Available analytical methods are listed with readiness notes.',
-      'Use this slide to show that the presentation is based on multiple analytical lenses, not a single chart.',
+      'Use this slide only when the audience needs to understand the methods behind the brief.',
       results.flatMap((item) => advancedMetricsToMetrics(item.metrics)).slice(0, 6),
       methodBullets(upload),
       results.flatMap((item) => item.series).slice(0, 12),
@@ -409,7 +409,7 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
       '10 / Evidence Appendix',
       'Supporting tables, filters, and analysis views',
       'A backup slide for users who need the exact analytical surfaces behind the story.',
-      'Use this appendix when presenting to analysts, finance teams, operations managers, or anyone who needs traceability.',
+      'Use this appendix only when the audience needs exact supporting surfaces behind the management brief.',
       results.flatMap((item) => advancedMetricsToMetrics(item.metrics)).slice(0, 4),
       appendixBullets.length ? [...appendixBullets, ...findings].slice(0, 12) : [...findings, ...preview.insights, ...recommendations].slice(0, 12),
       results.flatMap((item) => item.series).slice(0, 12),
@@ -417,12 +417,14 @@ export function buildPresentationDeck({ config, dashboard, upload }: StoryInput)
     ),
   ];
 
+  const slides = audienceSlideOrder(config.preset, baseSlides);
+
   return {
     generatedAt: new Date().toISOString(),
     preset: config.preset,
-    slides: audienceSlideOrder(config.preset, baseSlides),
+    slides,
     source: config.source,
-    subtitle: `${config.preset} audience | ${config.narrativeStyle} narrative with ${config.theme} theme | ${baseSlides.length} PowerPoint-style slides | built from all available analytics`,
+    subtitle: `${config.preset} audience | ${config.narrativeStyle} management brief | ${slides.length} decision slides | filtered from all available analytics`,
     title: deckTitle,
   };
 }

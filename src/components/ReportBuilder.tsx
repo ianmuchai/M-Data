@@ -130,8 +130,8 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
       <div className="panel-header story-header">
         <div>
           <p className="eyebrow">Visual Story Builder</p>
-          <h3>Board-ready presentation from the full analysis</h3>
-          <span className="panel-subtitle">BizDATA turns the dashboard, workbook findings, business questions, charts, risks, and recommendations into a clear slide deck.</span>
+          <h3>Management-ready brief from the full analysis</h3>
+          <span className="panel-subtitle">BizDATA filters the analysis into a concise decision brief: what matters, why it matters, and what management should do next.</span>
         </div>
         <div className="download-actions">
           <button className="secondary-button" onClick={() => downloadPresentationPdf(deck)} type="button">Download PDF</button>
@@ -262,7 +262,7 @@ export function ReportBuilder({ dashboard, upload }: ReportBuilderProps) {
                 <h3>{deck.title}</h3>
                 <span>{deck.subtitle}</span>
               </div>
-              <span className="badge">{selectedPreset.key} audience | {deck.slides.length} slides</span>
+              <span className="badge">{selectedPreset.key} brief | {deck.slides.length} decision slides</span>
             </div>
 
             <div className="slide-tabs" aria-label="Presentation slides">
