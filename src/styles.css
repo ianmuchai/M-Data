@@ -5539,3 +5539,104 @@ th button[data-tooltip]:focus-visible::before,
     font-size: 0.62rem;
   }
 }
+
+/* Data page evidence and field pills: keep long dataset labels readable */
+.business-question-card .question-evidence,
+.clickable-question-card .question-evidence,
+.column-analysis-card .question-evidence {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(168px, 100%), 1fr));
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+}
+
+.business-question-card .question-evidence span,
+.clickable-question-card .question-evidence span,
+.column-analysis-card .question-evidence span {
+  display: grid;
+  min-width: 0;
+  max-width: 100%;
+  align-content: start;
+  gap: 3px;
+  border-radius: 8px;
+  padding: 8px 9px;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  white-space: normal;
+}
+
+.business-question-card .question-evidence b,
+.business-question-card .question-evidence small,
+.clickable-question-card .question-evidence b,
+.clickable-question-card .question-evidence small,
+.column-analysis-card .question-evidence b,
+.column-analysis-card .question-evidence small {
+  max-width: 100%;
+  overflow: visible;
+  line-height: 1.2;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.business-question-card .question-fields,
+.clickable-question-card .question-fields,
+.field-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+}
+
+.business-question-card .question-fields span,
+.clickable-question-card .question-fields span {
+  display: inline-flex;
+  max-width: min(100%, 260px);
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 6px 9px;
+  overflow: visible;
+  line-height: 1.15;
+  text-align: center;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.field-pill-row span {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  max-width: min(100%, 320px);
+  align-items: center;
+  border-radius: 8px;
+  overflow: visible;
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.field-pill-row b {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+  .business-question-card .question-evidence,
+  .clickable-question-card .question-evidence,
+  .column-analysis-card .question-evidence {
+    grid-template-columns: repeat(auto-fit, minmax(min(138px, 100%), 1fr));
+  }
+
+  .business-question-card .question-fields span,
+  .clickable-question-card .question-fields span,
+  .field-pill-row span {
+    max-width: 100%;
+    font-size: 0.68rem;
+  }
+}
